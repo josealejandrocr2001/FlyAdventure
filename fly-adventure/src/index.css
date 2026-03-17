@@ -1,0 +1,48 @@
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Paleta: Cielo Abierto y Adrenalina */
+  --azul-cielo: #00A8E8;
+  --naranja-vuelo: #fb642d;
+  --gris-antracita: #2B2B2B;
+  --blanco-nube: #FFFFFF;
+  --azul-hielo: #488bc6;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--azul-hielo); /* Un fondo súper fresco y ligero */
+  color: var(--gris-antracita);
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--azul-cielo);
+  font-weight: 700;
+}
+
+/* Clases de utilidad que estamos usando en los componentes */
+.text-primary-custom { color: var(--azul-cielo) !important; }
+.text-accent { color: var(--naranja-vuelo) !important; }
+.bg-primary-custom { background-color: var(--azul-cielo) !important; }
+
+.btn-accent {
+  background-color: var(--naranja-vuelo);
+  color: var(--blanco-nube);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  border: none;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-accent:hover {
+  background-color: #e55a28; /* Un naranja un poco más oscuro para el hover */
+  color: var(--blanco-nube);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 107, 53, 0.4);
+}
