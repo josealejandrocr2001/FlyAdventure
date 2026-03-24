@@ -1,48 +1,548 @@
-/* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@300;400;500;600&display=swap');
-
-:root {
-  /* Paleta: Cielo Abierto y Adrenalina */
-  --azul-cielo: #00A8E8;
-  --naranja-vuelo: #fb642d;
-  --gris-antracita: #2B2B2B;
-  --blanco-nube: #FFFFFF;
-  --azul-hielo: #488bc6;
-}
-
-body {
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--azul-hielo); /* Un fondo súper fresco y ligero */
-  color: var(--gris-antracita);
+/* RESET BÁSICO */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden; /* <--- ESTA ES LA CLAVE: Corta el desbordamiento horizontal */
   margin: 0;
   padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f8fbff;
+  color: #1a4a7c;
 }
 
-h1, h2, h3, h4, h5, h6, .navbar-brand {
-  font-family: 'Montserrat', sans-serif;
-  color: var(--azul-cielo);
-  font-weight: 700;
+/* HEADER - Ahora es blanco con sombras suaves */
+header {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 50px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: fixed; 
+    top: 0;         /* Asegura que esté pegado arriba */
+    left: 0;        /* Asegura que empiece desde la izquierda */
+    right: 0; /*Obliga a estirar hasta la derecha*/
+    width: 100%;
+    z-index: 1000;
+    box-sizing: border-box;
+    
 }
 
-/* Clases de utilidad que estamos usando en los componentes */
-.text-primary-custom { color: var(--azul-cielo) !important; }
-.text-accent { color: var(--naranja-vuelo) !important; }
-.bg-primary-custom { background-color: var(--azul-cielo) !important; }
+header h1 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;          /* Peso 700 para que se vea imponente */
+  font-size: 1.8rem;
+  margin: 0;
+  color: #1a4a7c;
+}
 
-.btn-accent {
-  background-color: var(--naranja-vuelo);
-  color: var(--blanco-nube);
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  border: none;
+header h1 span {
+  color: #ffcc00;
+  font-weight: 500;          /* "Adventure" más delgado para contraste */
+}
+
+/* Contenedor del Menú - ESTO ARREGLA EL AMONTONAMIENTO */
+header nav {
+  display: flex;             /* Obliga a los enlaces a estar en línea */
+  align-items: center;       /* Los centra verticalmente */
+  flex-wrap: nowrap;         /* Evita que se bajen si no hay espacio */
+  margin-left: auto;         /* Empuja el menú hacia la derecha */
+}
+
+/* NAVEGACIÓN - Con Poppins y buen espacio */
+nav a {
+  margin-left: 20px;         /* Reducimos el espacio a 20px para que quepan */
+  margin-right: 0;           /* Aseguramos que no haya margen derecho extra */
+  color: #1a4a7c;
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 1.05rem;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  white-space: nowrap;       /* Evita que una palabra se parta en dos líneas */
+}
+/* Efecto opcional: una rayita amarilla cuando pasas el mouse */
+nav a:after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 2px;
+  background: #ffcc00;
+  transition: width .3s;
 }
 
-.btn-accent:hover {
-  background-color: #e55a28; /* Un naranja un poco más oscuro para el hover */
-  color: var(--blanco-nube);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(255, 107, 53, 0.4);
+nav a:hover:after {
+  width: 100%;
+}
+
+nav a:hover {
+  color: #ffcc00;
+}
+/* MAIN - Ajustado para no quedar oculto bajo el header fixed */
+main {
+  padding: 0; /* Quitamos padding para que las secciones ocupen todo el ancho */
+  margin-top: 0px; /* Altura aproximada del header */
+  min-height: 80vh;
+}
+
+/* FOOTER ACTUALIZADO - Forzamos el blanco */
+footer {
+  background-color: #1a4a7c;
+  text-align: center;
+  padding: 30px 10px;
+  border-top: 4px solid #ffcc00;
+  margin-top: 0 !important;
+  display: block; /* Asegura que se comporte como bloque sólido */
+}
+
+/* Esta regla es la que hará que el texto se vea blanco sí o sí */
+footer p {
+  color: #ffffff !important; /* El !important rompe el gris anterior */
+  font-size: 1rem;
+  margin: 0;
+  opacity: 1; /* Quitamos la opacidad para que brille el blanco */
+}
+/* Títulos principales */
+h2 {
+  font-size: 2.5rem; /* Tamaño grande para "¿Por qué volar...?" */
+  text-align: center;
+  color: #1a4a7c;
+  margin-top: 50px;
+  margin-bottom: 30px;
+}
+
+/* Títulos de las tarjetas y secciones */
+h3 {
+  font-size: 1.5rem;
+  color: #1a4a7c;
+  margin-bottom: 10px;
+}
+
+/* Párrafos descriptivos */
+p {
+  font-size: 1.1rem;
+  color: #555;
+  line-height: 1.6;
+}
+/* Contenedor donde están Seguridad, Paisajes, etc. */
+.cards {
+  display: flex;
+  justify-content: center; /* Centra las targetas*/
+  align-items: stretch;/*Hace que todas tengan la misma altura*/
+  gap: 25px;               /* Espacio entre ellas */
+  padding: 40px;
+  flex-wrap: wrap;  /*Responsive*/
+  width: 100%;         /* Asegura que ocupen todo el ancho disponible*/
+  margin-top: 40px;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  width: 280px;           /* Ancho fijo para que se vean como cajas */
+  text-align: center;     /* Centra el texto dentro de la tarjeta */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eef2f6;
+  transition: all 0.3s ease; /*Para que el cambio de color sea suave*/
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer; /*Cambia el cursor para indicar que es clickeable*/
+}
+/* Efecto al estar sobre la card */
+.card:hover{
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.01);/*Sombra para dar profundidad*/
+  border: 2px solid #FFC300;/*Cambiar el borde al amarillo vibrante de la marca*/
+}
+
+/* Estilos internos de la card */
+.card h3 {
+    color: #1a4a7c;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.card p {
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* La tarjeta con el borde amarillo de la foto */
+.card-highlight {
+  border: 2px solid #ffcc00;
+}
+.hero-container {
+    margin-top: 0; 
+    padding-top: 0;
+    width: 100vw;/* 100% del ancho de la ventana del navegador */
+    position: relative;     /* Para asegurar que se posicione bien */
+    left: 50%;              /* Lo movemos al centro */
+    right: 50%;
+    margin-left: -50vw;     /* Lo "estiramos" hacia la izquierda */
+    margin-right: -50vw;    /* Lo "estiramos" hacia la derecha */
+    margin-bottom: 0;
+    height: 100vh;
+    background: 
+        linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6)), 
+        url('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjFlZ3N1bnZhcmdwcnltODRvZGVua2h3ajV6MjFtODZuZWF2cml4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/taH8A68qhO9PiXKJgr/giphy.gif') 
+        center/cover no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-container h2 {
+    font-size: 3.5rem;
+    color: #1a4a7c; 
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.hero-container h2 span {
+  color: #ffcc00; /* Para la palabra "libertad" */
+}
+
+.hero-container p {
+    font-size: 1.2rem;
+    color: #1a4a7c;
+    font-weight: 500;
+    margin-bottom: 30px;
+}
+/* BOTÓN REDONDEADO */
+.btn-reserve {
+    background-color: #ffcc00;
+    color: #1a4a7c;
+    padding: 15px 35px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: 0.3s;
+    border: none;
+    display: inline-block;
+}
+
+.btn-reserve:hover {
+    background-color: #1a4a7c;
+    color: white;
+    transform: scale(1.05);
+}
+/* --- Estilos para la sección completa --- */
+.section {
+    /* Agregamos el fondo azul pastel claro aquí */
+    background-color: #EAF6FF; /* Un azul muy claro y suave */
+    display: flow-root;/*evita que los márgenes de los h2/p de adentro 
+       empujen la caja y creen líneas blancas*/
+    padding: 80px 20px;
+    text-align: center;
+}
+
+/* --- Título de la sección --- */
+.section h2 {
+    color: #1a4a7c;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    margin-top: 0;
+    text-align: center;
+}
+.card h4 {
+    color: #1a4a7c;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* El contenedor de la página Nosotros para dar espacio bajo el header */
+.nosotros-page {
+    margin-top: 100px; /* Para que no lo tape el header fixed */
+    padding-bottom: 0px;
+    padding-bottom: 0;
+}
+.nosotros-page .section h2, 
+.nosotros-page .section h3 {
+    margin-top: 0;      /* Elimina el espacio superior del título */
+    padding-top: 40px;   /* Si quieres espacio, usa padding (que mantiene el color de fondo) */
+}
+.section h3, .section h4, .section p {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+.section p:last-child {
+    margin-bottom: 0;
+}
+.reservas-page {
+    background-color: #EAF6FF; /* Fondo azul pastel de Fly Adventure */
+    padding-bottom: 50px;
+    margin-top: 0; /* Asegura que empiece pegado al header */
+}
+.section-form {
+    padding: 60px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.form-container {
+    background: #ffffff;
+    padding: 50px;
+    border-radius: 20px;
+    /* Sombra suave y difuminada como en la imagen */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 900px;
+}
+.form-container h3 {
+    color: #1a4a7c;
+    font-size: 2.2rem;
+    margin-bottom: 40px;
+    font-weight: 700;
+    text-align: center;
+}
+.form-grid {
+    display: grid;
+    /* Dos columnas en PC */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px; /* Espacio entre cuadros */
+    margin-bottom: 25px;
+}
+.input-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.input-group label {
+    color: #1a4a7c;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+.input-group input, 
+.input-group select, 
+.input-group textarea {
+    padding: 15px 20px;
+    /* Fondo gris muy claro como en la imagen */
+    background-color: #f7f9fc;
+    border: 1px solid transparent; /* Borde oculto al inicio */
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    color: #1a4a7c;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+/* Placeholder */
+.input-group input::placeholder, 
+.input-group textarea::placeholder {
+    color: #aab8c9;
+}
+.input-group input:focus, 
+.input-group select:focus, 
+.input-group textarea:focus {
+    background-color: #ffffff;
+    /* Borde amarillo vibrante cuando escribes */
+    border-color: #ffcc00;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.1);
+}
+.full-width {
+    grid-column: span 2;
+}
+/* 6. Botón de Confirmar Reserva (Sustituye .btn-reserve) */
+.btn-reserve {
+    background-color: #ffcc00; /* Amarillo Fly Adventure */
+    color: #1a4a7c; /* Azul oscuro */
+    padding: 18px 45px;
+    border-radius: 50px; /* Redondeado total */
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.1rem;
+    font-family: 'Poppins', sans-serif;
+    display: block;
+    width: fit-content;
+    margin: 40px auto 0 auto; /* Centrado */
+    transition: all 0.3s ease;
+    text-transform: none; /* Asegura mayúsculas normales */
+}
+
+/* EFECTO HOVER DEL BOTÓN */
+.btn-reserve:hover {
+    background-color: #1a4a7c;
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(26, 74, 124, 0.2);
+}
+
+/* Mensaje de éxito */
+.success-message {
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #d4edda;
+    color: #155724;
+    border-radius: 10px;
+    font-weight: 600;
+    text-align: center;
+}
+.flight-price {
+    color: #ffcc00; /* Amarillo Fly Adventure */
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 10px 0;
+}
+
+/* Para que las cards de vuelos no se vean vacías */
+.flights-page .card {
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+/* --- FAQ SECTION --- */
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.faq-item {
+    background: white;
+    margin-bottom: 15px;
+    border-radius: 15px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #eef2f6;
+}
+
+/* Título de la pregunta */
+.faq-item summary {
+    font-weight: 600;
+    color: #1a4a7c;
+    list-style: none; /* Quita la flechita fea por defecto */
+    position: relative;
+    padding-right: 30px;
+    outline: none;
+}
+
+/* Crear una flechita personalizada con CSS */
+.faq-item summary::after {
+    content: '↓';
+    position: absolute;
+    right: 0;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+/* Estilo cuando el acordeón está abierto */
+.faq-item[open] {
+    border: 2px solid #ffcc00;
+}
+
+.faq-item[open] summary {
+    margin-bottom: 15px;
+    border-bottom: 1px solid #EAF6FF;
+    padding-bottom: 10px;
+}
+
+.faq-item[open] summary::after {
+    content: '↑';
+}
+
+.faq-item p {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+.card-img {
+    width: 100%;
+    height: 180px;      /* Altura fija para que todas las cards midan igual */
+    object-fit: cover;  /* Corta la imagen para que rellene el espacio sin estirarse */
+    border-radius: 15px 15px 0 0; /* Solo redondea las esquinas de arriba */
+    margin-top: -30px;  /* Sube la imagen para que pegue al borde superior de la card */
+    margin-left: -30px; /* Compensa el padding de la card */
+    margin-right: -30px;
+    width: calc(100% + 60px); /* Ajusta el ancho para que llegue a los bordes */
+    margin-bottom: 20px;
+}
+
+/* Ajuste adicional para que la card no oculte la imagen */
+.card {
+    padding-top: 30px;
+    overflow: hidden; /* Asegura que la imagen no se salga de las esquinas redondeadas */
+}
+.login-page {
+min-height: 100vh; /* Cambiamos a min-height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* El degradado exacto de tu HTML: de azul a amarillo */
+    background: linear-gradient(135deg, #4FB3FF, #FFC300); 
+    padding-top: 80px; /* <--- ESTO separa el cuadro del Header */
+    box-sizing: border-box;
+}
+
+.login-container {
+    background: white;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+.login-container h2 span {
+    color: #ffcc00;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box; /* Evita que el input se salga del cuadro */
+}
+
+.btn-forgot {
+    background: none;
+    border: none;
+    color: #1a4a7c;
+    text-decoration: none;
+    margin-top: 15px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: 0.3s;
+    width: 100%;
+    display: block;
+}
+
+.btn-forgot:hover {
+    opacity: 1;
+    color: #ffcc00;
+    text-decoration: underline;
+}
+
+.error-alert {
+    color: #d00000;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.success-alert {
+    color: #28a745;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+    font-weight: 500;
 }
