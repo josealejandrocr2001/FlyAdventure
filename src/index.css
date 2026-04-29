@@ -188,7 +188,10 @@ p {
     height: 100vh;
     background: 
         linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6)), 
-        url('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjFlZ3N1bnZhcmdwcnltODRvZGVua2h3ajV6MjFtODZuZWF2cml4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/taH8A68qhO9PiXKJgr/giphy.gif') 
+        url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif')
+        
+        /*('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjFlZ3N1bnZhcmdwcnltODRvZGVua2h3ajV6MjFtODZuZWF2cml4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/taH8A68qhO9PiXKJgr/giphy.gif')*/
+        
         center/cover no-repeat;
     display: flex;
     flex-direction: column;
