@@ -549,3 +549,33 @@ min-height: 100vh; /* Cambiamos a min-height */
     margin-bottom: 15px;
     font-weight: 500;
 }
+
+/* Botón de Cerrar Sesión en el Header */
+nav button {
+  margin-left: 20px;
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  padding: 0;
+}
+
+nav button:hover {
+  color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+  transform: scale(1.05);
+}
+
+/* Color especial para el enlace del Panel Admin */
+.nav-admin-link {
+  color: #FFC300 !important;
+  font-weight: 700 !important;
+}
+
+.nav-admin-link:hover {
+  color: #e6b000 !important;
+}
