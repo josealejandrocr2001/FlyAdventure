@@ -1,50 +1,52 @@
 import { Link } from "react-router-dom";
+import { HeroContainer, BtnReserve, Section, CardsContainer, Card } from "../styles/HomeStyles";
 
 const Home = () => {
   return (
     <>
-      <section className="hero-container">
+      <HeroContainer>
         <h2>Vive la <span>libertad</span> de volar</h2>
         <p>Experimenta el parapente como nunca antes</p>
-        <Link to="/reservar" className="btn-reserve">
+        {/* Usamos as={Link} para que el botón de Styled Components se comporte como un Link de React Router */}
+        <BtnReserve as={Link} to="/reservar">
           Reservar Ahora
-        </Link>      
-      </section>
+        </BtnReserve>      
+      </HeroContainer>
 
-      <section className="section">
+      <Section>
         <h2>¿Por qué volar con nosotros?</h2>
-        <div className="cards">
-          <div className="card">
+        <CardsContainer>
+          <Card>
             <h3>Seguridad</h3>
             <p>Equipos certificados y pilotos expertos.</p>
-          </div>
+          </Card>
 
-          <div className="card">
+          <Card>
             <h3>Paisajes únicos</h3>
             <p>Vistas increíbles desde el aire.</p>
-          </div>
+          </Card>
 
-          <div className="card">
+          <Card>
             <h3>Experiencia inolvidable</h3>
             <p>Momentos que recordarás toda la vida.</p>
-          </div>
-        </div>
-      </section>
+          </Card>
+        </CardsContainer>
+      </Section>
 
-      <section className="section">
+      <Section>
         <h2>Vuelos Destacados</h2>
-        <div className="cards">
-          <div className="card">
+        <CardsContainer>
+          <Card>
             <h3>Vuelo Básico</h3>
             <p>15 minutos de adrenalina</p>
-          </div>
+          </Card>
 
-          <div className="card">
+          <Card>
             <h3>Vuelo Premium</h3>
             <p>30 minutos con video incluido</p>
-          </div>
-        </div>
-      </section>
+          </Card>
+        </CardsContainer>
+      </Section>
     </>
   );
 };
