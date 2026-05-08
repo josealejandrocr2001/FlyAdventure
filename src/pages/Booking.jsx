@@ -19,6 +19,22 @@ const Booking = () => {
   const [cuposOcupados, setCuposOcupados] = useState({}); // Estado para llevar la cuenta de los cupos
   const [mostrarPago, setMostrarPago] = useState(false);
 
+  const [servicios, setServicios] = useState([]);
+
+  useEffect(() => {
+    const cargarServicios = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "servicios"));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Filtramos para que solo salgan los que están habilitados (visibles)
+        setServicios(data.filter(s => s.activo !== false));
+      } catch (error) {
+        console.error("Error al cargar los servicios:", error);
+      }
+    };
+    cargarServicios();
+  }, []);
+
   // 2. ESTADO PARA RECOGER LOS DATOS DEL FORMULARIO (Agregamos 'hora')
   const [formData, setFormData] = useState({
     documento: '',
@@ -146,9 +162,14 @@ Quedo atento a los métodos de pago para confirmar mi cupo.`;
                 <label>Tipo de Vuelo</label>
                 <select name="tipoVuelo" value={formData.tipoVuelo} onChange={handleChange} required>
                   <option value="">Selecciona un plan</option>
-                  <option value="tradicional">Vuelo Tradicional (15 min)</option>
-                  <option value="extremo">Vuelo Extremo (25 min)</option>
-                  <option value="pareja">Vuelo en Pareja</option>
+                  
+                  {/* NUEVO: Mapeamos los servicios desde Firebase */}
+                  {servicios.map(servicio => (
+                    <option key={servicio.id} value={servicio.titulo}>
+                      {servicio.titulo} - ${Number(servicio.precio).toLocaleString('es-CO')}
+                    </option>
+                  ))}
+
                 </select>
               </div>
 
