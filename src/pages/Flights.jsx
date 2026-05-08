@@ -1,85 +1,112 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // 1. Agregamos hooks
 import { Link } from "react-router-dom";
-import imgVuelo1 from '../assets/vuelo-1.jpg';
-import imgVuelo2 from '../assets/vuelo-2.jpg';
-import imgVuelo3 from '../assets/vuelo-3.jpg';
+// 2. Importamos Firebase
+import { db } from '../config/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
-// Importamos los nuevos estilos
-import { 
-  FlightsPage, 
-  HeroContainer, 
-  Section, 
-  CardsGrid, 
-  FlightCard, 
-  PriceTag, 
-  BtnReserve, 
-  FAQContainer, 
-  FAQItem 
+// Importamos los estilos (se mantienen intactos)
+import {
+  FlightsPage,
+  HeroContainer,
+  Section,
+  CardsGrid,
+  FlightCard,
+  PriceTag,
+  BtnReserve,
+  FAQContainer,
+  FAQItem
 } from "../styles/FlightStyles";
 
 const Flights = () => {
+  // 3. Estado para guardar los servicios que vienen de Firebase
+  const [servicios, setServicios] = useState([]);
+
+  // 4. Efecto para cargar los datos al abrir la página
+  useEffect(() => {
+    const cargarServicios = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "servicios"));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // FILTRO: Solo guardamos en el estado los que NO estén ocultos
+        setServicios(data.filter(s => s.activo !== false));
+        
+      } catch (error) {
+        console.error("Error al cargar los servicios:", error);
+      }
+    };
+    
+    cargarServicios();
+  }, []);
+
   return (
     <FlightsPage>
       <HeroContainer>
-        <h2>Nuestros <span>Vuelos</span></h2>
+        <h2>Servicios de <span>Vuelos</span></h2>
         <p>Elige la experiencia perfecta para ti</p>
       </HeroContainer>
 
       <Section>
-        <h2>Categorías de Vuelo</h2>
+        <h2>Catalogo de servicios</h2>
         <p style={{ maxWidth: '700px', margin: '0 auto 40px auto' }}>
-          Disfruta de nuestros planes diseñados con los más altos estándares de seguridad 
+          Disfruta de nuestros planes diseñados con los más altos estándares de seguridad
           y guiados por pilotos expertos certificados.
         </p>
 
         <CardsGrid>
-          {/* VUELO TRADICIONAL */}
-          <FlightCard>
-            <img src={imgVuelo1} alt="Vuelo Tradicional" />
-            <h3>Vuelo Tradicional</h3>
-            <PriceTag>$120.000</PriceTag>
-            <p>Ideal para principiantes. Disfruta de un planeo suave y paisajes increíbles.</p>
-            <BtnReserve as={Link} to="/reservar" style={{ marginTop: '20px' }}>
-              Reservar Ahora
-            </BtnReserve>
-          </FlightCard>
+          {/* 5. Mapeamos los servicios dinámicamente */}
+          {servicios.map(servicio => (
+            <FlightCard
+              key={servicio.id}
+              style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            >
+              <img
+                src={servicio.imagen}
+                alt={servicio.titulo}
+                style={{
+                  width: '100%',
+                  height: '340px', /* <-- Imagen mucho más alta */
+                  objectFit: 'cover',
+                  objectPosition: 'center'
+                }}
+              />
 
-          {/* VUELO EXTREMO */}
-          <FlightCard>
-            <img src={imgVuelo2} alt="Vuelo Extremo" />
-            <h3>Vuelo Extremo</h3>
-            <PriceTag>$250.000</PriceTag>
-            <p>Para amantes de la adrenalina. Incluye maniobras acrobáticas y video profesional.</p>
-            <BtnReserve as={Link} to="/reservar" style={{ marginTop: '20px' }}>
-              Reservar Ahora
-            </BtnReserve>
-          </FlightCard>
+              {/* Contenedor blanco con textos más grandes */}
+              <div style={{ padding: '5px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
 
-          {/* VUELO EN PAREJA */}
-          <FlightCard>
-            <img src={imgVuelo3} alt="Vuelo en Pareja" />
-            <h3>Vuelo en Pareja</h3>
-            <PriceTag>$450.000</PriceTag>
-            <p>Comparte la magia de volar al mismo tiempo con esa persona especial.</p>
-            <BtnReserve as={Link} to="/reservar" style={{ marginTop: '20px' }}>
-              Reservar Ahora
-            </BtnReserve>
-          </FlightCard>
+                {/* Título más grande (1.4rem) */}
+                <h3 style={{ margin: '8px 0 1px 0', fontSize: '1.4rem' }}>{servicio.titulo}</h3>
+
+                <PriceTag style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>
+                  ${Number(servicio.precio).toLocaleString('es-CO')}
+                </PriceTag>
+
+                {/* Descripción más grande (0.95rem) y con mejor interlineado */}
+                <p style={{ margin: '0 0 25px 0', fontSize: '0.95rem', lineHeight: '1.4', flexGrow: 1 }}>
+                  {servicio.descripcion}
+                </p>
+
+                <BtnReserve as={Link} to="/reservar" style={{ marginTop: 'auto', padding: '10px 20px', fontSize: '0.9rem', width: 'fit-content', alignSelf: 'center' }}>
+                  Reservar Ahora
+                </BtnReserve>
+              </div>
+            </FlightCard>
+          ))}
         </CardsGrid>
 
         <Section>
-            <h2>Preguntas Frecuentes</h2>
-            <FAQContainer>
-                <FAQItem>
-                    <summary>¿Qué ropa debo llevar para el vuelo?</summary>
-                    <p>Te recomendamos usar ropa cómoda, pantalones largos, zapatos deportivos y chaqueta rompevientos.</p>
-                </FAQItem>
-                <FAQItem>
-                    <summary>¿Es seguro volar en parapente?</summary>
-                    <p>¡Totalmente! En <strong>Fly Adventure</strong> usamos equipos certificados y pilotos expertos.</p>
-                </FAQItem>
-                {/* Agrega los demás FAQItem aquí... */}
-            </FAQContainer>
+          <h2>Preguntas Frecuentes</h2>
+          <FAQContainer>
+            <FAQItem>
+              <summary>¿Qué ropa debo llevar para el vuelo?</summary>
+              <p>Te recomendamos usar ropa cómoda, pantalones largos, zapatos deportivos y chaqueta rompevientos.</p>
+            </FAQItem>
+            <FAQItem>
+              <summary>¿Es seguro volar en parapente?</summary>
+              <p>¡Totalmente! En <strong>Fly Adventure</strong> usamos equipos certificados y pilotos expertos.</p>
+            </FAQItem>
+            {/* Agrega los demás FAQItem aquí... */}
+          </FAQContainer>
         </Section>
       </Section>
     </FlightsPage>
