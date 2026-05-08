@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
 // IMPORTANTE: Agregamos addDoc aquí
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import emailjs from '@emailjs/browser';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import './AdminPanel.css';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -61,6 +63,37 @@ export const AdminPanel = () => {
     if (window.confirm('¿Seguro que deseas eliminar esta reserva?')) {
       await deleteDoc(doc(db, "reservas", id));
       cargarReservas();
+    }
+  };
+
+  const confirmarPago = async (reserva) => {
+    if (!window.confirm('¿Confirmar pago y enviar correo al cliente?')) return;
+
+    try {
+      const ref = doc(db, "reservas", reserva.id);
+      await updateDoc(ref, { estado: "Pagado" }); // Cambia el estado en Firebase
+
+      // Datos que se enviarán a la plantilla del correo
+      const templateParams = {
+        to_name: reserva.nombre,
+        to_email: reserva.email,
+        fecha_vuelo: reserva.fecha,
+        hora_vuelo: reserva.hora,
+        tipo_vuelo: reserva.tipoVuelo
+      };
+
+      await emailjs.send(
+        'service_c2u0zrv',
+        'template_rukyldg',
+        templateParams,
+        'aH1VCX_BLmcB3s77H'
+      );
+
+      alert("✅ Reserva pagada y correo enviado con éxito.");
+      cargarReservas(); // Recarga la tabla para ver el nuevo estado
+    } catch (error) {
+      console.error("Error al confirmar:", error);
+      alert("Hubo un error al enviar el correo.");
     }
   };
 
@@ -170,16 +203,39 @@ export const AdminPanel = () => {
             <h2>Gestión de Reservas</h2>
             <table>
               <thead>
-                <tr><th>Documento</th><th>Tipo</th><th>Fecha</th><th>Acciones</th></tr>
+                {/* Asegúrate de tener los encabezados correctos */}
+                <tr><th>Documento</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 {reservas.map(r => (
-                  <tr key={r.id}>
+                  <tr key={r.id}> {/* 1. Envolvemos en TR con su key */}
                     <td>{r.documento}</td>
                     <td>{r.tipoVuelo}</td>
                     <td>{r.fecha}</td>
+                    <td>
+                      {/* Etiqueta visual para el estado */}
+                      <span style={{
+                        backgroundColor: r.estado === 'Pagado' ? '#d4edda' : '#fff3cd',
+                        color: r.estado === 'Pagado' ? '#155724' : '#856404',
+                        padding: '4px 8px', borderRadius: '10px', fontWeight: 'bold', fontSize: '0.8rem'
+                      }}>
+                        {r.estado || 'Pendiente'}
+                      </span>
+                    </td>
+                    {/* 2. Etiqueta TD abierta correctamente */}
                     <td className="actions">
-                      <button onClick={() => handleEditar(r)}>✏️</button>
+                      {/* NUEVO BOTÓN PARA APROBAR PAGO */}
+                      {r.estado !== 'Pagado' && (
+                        <button
+                          onClick={() => confirmarPago(r)}
+                          style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }}
+                          title="Confirmar Pago"
+                        >
+                          ✅
+                        </button>
+                      )}
+
+                      <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>✏️</button>
                       <button onClick={() => handleEliminar(r.id)} style={{ background: '#e74c3c', color: 'white' }}>🗑️</button>
                     </td>
                   </tr>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'; // IMPORTANTE: Agregamos useEffect
-import { db } from "../config/firebase"; 
+import { db } from "../config/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore"; // Importamos las herramientas de consulta
 
 // 1. FUNCIÓN PARA GENERAR LOS BLOQUES DE HORARIOS (9am a 4pm)
@@ -17,6 +17,7 @@ const bloquesDisponibles = generarHorarios();
 const Booking = () => {
   const [enviado, setEnviado] = useState(false);
   const [cuposOcupados, setCuposOcupados] = useState({}); // Estado para llevar la cuenta de los cupos
+  const [mostrarPago, setMostrarPago] = useState(false);
 
   // 2. ESTADO PARA RECOGER LOS DATOS DEL FORMULARIO (Agregamos 'hora')
   const [formData, setFormData] = useState({
@@ -80,28 +81,34 @@ const Booking = () => {
   // Función para enviar a la base de datos
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      await addDoc(collection(db, "reservas"), {
+      const reservaData = {
         ...formData,
-        estado: "pendiente", 
-        fechaCreacion: serverTimestamp() 
-      });
+        estado: "pendiente",
+        fechaCreacion: serverTimestamp()
+      };
 
-      setEnviado(true);
-      
-      // Limpiamos el formulario manualmente para resetear también los selects
-      setFormData({
-        documento: '', nombre: '', email: '', telefono: '', tipoVuelo: '', fecha: '', hora: '', peso: '', edad: '', observaciones: ''
-      });
-      e.target.reset(); 
-      
-      setTimeout(() => setEnviado(false), 5000);
+      await addDoc(collection(db, "reservas"), reservaData);
 
+      // En lugar de solo mensaje de éxito, activamos la vista de pago
+      setMostrarPago(true);
     } catch (error) {
-      console.error("Error al guardar en Firebase:", error);
-      alert("Error al conectar con la base de datos");
+      console.error("Error:", error);
     }
+  };
+
+  const generarEnlaceWhatsapp = () => {
+    const telefono = "573332642395"; // Tu número de FlyAdventure
+    const mensaje = `¡Hola Fly Adventure! 👋 Requiero completar mi reserva:
+📌 *Nombre:* ${formData.nombre}
+📌 *Vuelo:* ${formData.tipoVuelo}
+📌 *Fecha:* ${formData.fecha}
+📌 *Hora:* ${formData.hora}
+💰 *Documento:* ${formData.documento}
+
+Quedo atento a los métodos de pago para confirmar mi cupo.`;
+
+    return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
   };
 
   const hoy = new Date().toISOString().split('T')[0];
@@ -117,7 +124,7 @@ const Booking = () => {
         <div className="form-container">
           <form onSubmit={handleSubmit} id="form-reserva">
             <div className="form-grid">
-              
+
               <div className="input-group">
                 <label>Documento de Identidad</label>
                 <input type="text" name="documento" value={formData.documento} onChange={handleChange} placeholder="C.C. / Pasaporte" required />
@@ -153,11 +160,11 @@ const Booking = () => {
               {/* 4. NUEVO CAMPO: HORA DEL VUELO */}
               <div className="input-group">
                 <label>Hora del Vuelo</label>
-                <select 
-                  name="hora" 
-                  value={formData.hora} 
-                  onChange={handleChange} 
-                  required 
+                <select
+                  name="hora"
+                  value={formData.hora}
+                  onChange={handleChange}
+                  required
                   disabled={!formData.fecha} // Bloqueado si no hay fecha
                 >
                   <option value="">{formData.fecha ? "Selecciona una hora" : "Primero elige una fecha"}</option>
@@ -189,12 +196,29 @@ const Booking = () => {
               <textarea name="observaciones" value={formData.observaciones} onChange={handleChange} placeholder="Cuéntanos si tienes alguna condición médica"></textarea>
             </div>
 
-            <button type="submit" className="btn-reserve">Confirmar Reserva</button>
+            {/* 1. ESTE ES EL NUEVO BOTÓN (Reemplaza al anterior) */}
+            {!mostrarPago && (
+              <button type="submit" className="btn-reserve">
+                Proceder al Pago
+              </button>
+            )}
           </form>
 
-          {enviado && (
-            <div className="success-message">
-              <p>¡Reserva guardada en Firebase con éxito! El administrador la revisará pronto.</p>
+          {/* 2. ESTE ES EL NUEVO MENSAJE Y BOTÓN DE WHATSAPP (Reemplaza al {enviado && ...}) */}
+          {mostrarPago && (
+            <div className="success-message" style={{ backgroundColor: '#ffffff', border: '2px solid #FFC300', padding: '30px' }}>
+              {/* Nota: Quité el símbolo $ antes de las llaves para que React lo lea bien */}
+              <h3 style={{ color: '#1a4a7c', marginTop: 0 }}>¡Casi listo, {formData.nombre.split(' ')[0]}!</h3>
+              <p>Para garantizar tu cupo en la fecha y hora seleccionada, debes realizar el pago.</p>
+              <a
+                href={generarEnlaceWhatsapp()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-reserve"
+                style={{ textDecoration: 'none', backgroundColor: '#25D366', color: 'white', display: 'inline-block', marginTop: '15px' }}
+              >
+                Pagar por WhatsApp 📱
+              </a>
             </div>
           )}
         </div>
