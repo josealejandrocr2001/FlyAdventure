@@ -36,7 +36,7 @@ header h1 {
 }
 
 header h1 span {
-  color: #ffcc00;
+  color: #FFB703;
   font-weight: 500;          /* "Adventure" más delgado para contraste */
 }
 
@@ -187,7 +187,7 @@ p {
     margin-bottom: 0;
     height: 100vh;
     background: 
-        linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6)), 
+        linear-gradient(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.6)), 
         url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif')
         
         /*('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjFlZ3N1bnZhcmdwcnltODRvZGVua2h3ajV6MjFtODZuZWF2cml4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/taH8A68qhO9PiXKJgr/giphy.gif')*/
@@ -198,6 +198,8 @@ p {
     justify-content: center;
     align-items: center;
     text-align: center;
+    text-shadow: 1px 1px 2px rgb(2, 42, 83);
+
 }
 
 .hero-container h2 {
@@ -208,7 +210,7 @@ p {
 }
 
 .hero-container h2 span {
-  color: #ffcc00; /* Para la palabra "libertad" */
+  color: #FFB703; /* Para la palabra "libertad" */
 }
 
 .hero-container p {
@@ -218,6 +220,124 @@ p {
     margin-bottom: 30px;
 }
 /* BOTÓN REDONDEADO */
+.weather-widget {
+    margin: 28px 0 8px;
+    padding: 22px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #d8e9f8;
+    box-shadow: 0 8px 24px rgba(26, 74, 124, 0.08);
+    text-align: left;
+}
+
+.weather-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+.weather-eyebrow {
+    color: #4FB3FF;
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.weather-widget h3 {
+    color: #1a4a7c;
+    font-size: 1.35rem;
+    margin: 0 0 6px;
+    text-align: left;
+}
+
+.weather-widget p {
+    color: #4a6178;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.weather-badge {
+    border-radius: 999px;
+    color: #ffffff;
+    flex-shrink: 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    white-space: nowrap;
+}
+
+.weather-badge-bueno {
+    background: #258f5a;
+}
+
+.weather-badge-medio {
+    background: #b7791f;
+}
+
+.weather-badge-malo {
+    background: #c2413b;
+}
+
+.weather-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.weather-metrics div {
+    background: #f7f9fc;
+    border: 1px solid #edf3f9;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.weather-metrics span {
+    color: #678095;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.weather-metrics strong {
+    color: #1a4a7c;
+    display: block;
+    font-size: 1rem;
+}
+
+.weather-recommendation {
+    background: #eef8ff;
+    border-left: 4px solid #4FB3FF;
+    border-radius: 10px;
+    margin-top: 16px !important;
+    padding: 12px 14px;
+}
+
+.weather-loading,
+.weather-error {
+    color: #1a4a7c;
+    font-weight: 600;
+    text-align: center;
+}
+
+.weather-error h3 {
+    text-align: center;
+}
+
+@media (max-width: 720px) {
+    .weather-header {
+        flex-direction: column;
+    }
+
+    .weather-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 .btn-reserve {
     background-color: #ffcc00;
     color: #1a4a7c;
@@ -311,7 +431,7 @@ p {
 .form-grid {
     display: grid;
     /* Dos columnas en PC */
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 25px; /* Espacio entre cuadros */
     margin-bottom: 25px;
 }
@@ -319,6 +439,7 @@ p {
     display: flex;
     flex-direction: column;
     text-align: left;
+    min-width: 0;
 }
 .input-group label {
     color: #1a4a7c;
@@ -329,6 +450,9 @@ p {
 .input-group input, 
 .input-group select, 
 .input-group textarea {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
     padding: 15px 20px;
     /* Fondo gris muy claro como en la imagen */
     background-color: #f7f9fc;
@@ -355,6 +479,16 @@ p {
 }
 .full-width {
     grid-column: span 2;
+}
+
+@media (max-width: 720px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full-width {
+        grid-column: span 1;
+    }
 }
 /* 6. Botón de Confirmar Reserva (Sustituye .btn-reserve) */
 .btn-reserve {
@@ -393,7 +527,7 @@ p {
     text-align: center;
 }
 .flight-price {
-    color: #ffcc00; /* Amarillo Fly Adventure */
+    color: #FFB703; /* Amarillo Fly Adventure */
     font-size: 1.5rem;
     font-weight: 700;
     margin: 10px 0;

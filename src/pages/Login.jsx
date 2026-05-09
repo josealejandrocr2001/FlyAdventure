@@ -18,7 +18,7 @@ const Login = () => {
             await signInWithEmailAndPassword(auth, email, password);
             // CORRECCIÓN: Te manda a la ruta correcta definida en App.jsx
             navigate('/admin-panel'); 
-        } catch (err) {
+        } catch {
             setError('Usuario o contraseña incorrectos.');
         }
     };
@@ -33,7 +33,7 @@ const Login = () => {
             await sendPasswordResetEmail(auth, email);
             setMessage('Se ha enviado un correo para restablecer tu contraseña.');
             setError('');
-        } catch (err) {
+        } catch {
             setError('Error al enviar el correo. Verifica el email.');
         }
     };

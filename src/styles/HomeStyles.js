@@ -2,8 +2,8 @@ import styled from 'styled-components';
 
 export const HeroContainer = styled.section`
   height: 100vh;
-  background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6)),
-    url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif')
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center/cover no-repeat;
       center/cover no-repeat;
   display: flex;
   justify-content: center;
@@ -15,22 +15,24 @@ export const HeroContainer = styled.section`
   h2 {
     font-size: 3.2rem;
     margin-bottom: 10px;
-    color: #1e6091;
+    color: #82c1f1;
 
     span {
-      color: #ffc300;
+      color: #FFB703;
     }
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     margin-bottom: 25px;
-    color: #1e6091;
+    color: #71b8ee;
+    text-shadow: 1px 1px 2px #062b46;
+    
   }
 `;
 
 export const BtnReserve = styled.button`
-  background: #ffc300;
+  background: #FFB703;
   padding: 14px 30px;
   border-radius: 30px;
   text-decoration: none;
@@ -88,6 +90,6 @@ export const Card = styled.div`
 
   &:hover {
     transform: translateY(-10px);
-    border: 2px solid #ffc300;
+    border: 2px solid #FFB703;
   }
 `;

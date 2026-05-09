@@ -4,8 +4,9 @@
   font-family: 'Poppins', sans-serif;
   background: #EAF6FF;
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 72px);
   width: 100%; /* Forzar ancho completo */
+  margin-top: 72px;
 }
 
 .sidebar {
@@ -22,7 +23,7 @@
 }
 
 .sidebar span {
-  color: #FFC300;
+  color: #FFB703;
 }
 
 .menu-item {
@@ -34,14 +35,15 @@
 }
 
 .menu-item:hover {
-  background: #FFC300;
+  background: #FFB703;
 }
 
 .content {
   flex: 1;
   padding: 40px;
-  overflow-x: auto; /* Permite scroll horizontal si es necesario */
+  /* overflow-x: auto; Permite scroll horizontal si es necesario */
   width: calc(100% - 250px);
+   /* Alinear al inicio para evitar estiramiento */
 }
 
 .card {
@@ -54,8 +56,7 @@
 }
 
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
   gap: 15px;
   margin-top: 20px;
 }
@@ -70,12 +71,19 @@ th {
   padding: 10px;
   background: #4FB3FF;
   color: #fff;
-  text-align: left;
+  text-align: center;
 }
 
 td {
   padding: 12px;
   border-bottom: 1px solid #eee;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.actions {
+  text-align: center;
+  white-space: nowrap;
 }
 
 .actions button {
@@ -87,6 +95,7 @@ td {
 }
 
 input, select {
+  box-sizing: border-box;
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #ccc;
@@ -98,7 +107,7 @@ button {
   padding: 10px;
   border: none;
   border-radius: 20px;
-  background: #FFC300;
+  background: #FFB703;
   cursor: pointer;
   font-weight: bold;
 }
@@ -120,4 +129,161 @@ button {
   border-radius: 15px;
   width: 300px;
   text-align: center;
+}
+
+.reservas-view {
+  width: 100%;
+}
+
+.reservas-header {
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+  padding: 28px 32px;
+  text-align: center;
+}
+
+.reservas-header h2 {
+  color: #1a4a7c;
+  font-size: 2.1rem;
+  margin: 0 0 8px;
+}
+
+.reservas-header p {
+  color: #5a7189;
+  margin: 0;
+}
+
+.reservation-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.reservation-summary-card {
+  background: #fff;
+  border: 1px solid #edf3f9;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  padding: 22px;
+  text-align: center;
+}
+
+.reservation-summary-card span {
+  color: #1a4a7c;
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.reservation-summary-card strong {
+  color: #2d3748;
+  display: block;
+  font-size: 1.45rem;
+}
+
+.reservation-filters {
+  align-items: center;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(240px, 1.4fr) minmax(160px, 0.8fr) minmax(150px, 0.7fr) minmax(170px, 0.8fr) minmax(180px, 0.9fr);
+  margin-bottom: 20px;
+  padding: 16px;
+}
+
+.reservation-filters input,
+.reservation-filters select,
+.reservation-filters button {
+  height: 44px;
+  margin: 0;
+}
+
+.reservation-search input {
+  background: #f7f9fc;
+  border: 1px solid #e6edf5;
+}
+
+.sort-date-button {
+  background: #1a4a7c;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.reservations-table-card {
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.reservations-table-wrap {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.reservations-table {
+  margin-top: 0;
+  min-width: 980px;
+}
+
+.reservations-table th {
+  font-size: 0.92rem;
+  padding: 14px 12px;
+  white-space: nowrap;
+}
+
+.reservations-table td {
+  color: #1a4a7c;
+  font-size: 0.94rem;
+  font-weight: 600;
+  padding: 14px 12px;
+}
+
+.reservation-name-cell {
+  color: #12385f;
+  min-width: 160px;
+  text-align: left;
+}
+
+.status-pill {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+}
+
+.status-pill-pendiente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-pill-confirmada {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-pill-cancelada {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.empty-reservations {
+  color: #5a7189;
+  font-weight: 600;
+  padding: 34px 12px;
+}
+
+@media (max-width: 1200px) {
+  .reservation-summary-grid,
+  .reservation-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
