@@ -77,7 +77,7 @@ export const FlightCard = styled.div`
 `;
 
 export const PriceTag = styled.p`
-  color: #FFC300 !react-important; /* Usamos el amarillo de tu paleta */
+  color: #FFB703 !important; /* Usamos el amarillo de tu paleta */
   font-size: 1.5rem !important;
   font-weight: 700;
   margin: 15px 0 !important;

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'; // 1. Agregamos hooks
 import { Link } from "react-router-dom";
-// 2. Importamos Firebase
-import { db } from '../config/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { cargarServiciosDisponibles, obtenerTituloServicio } from '../services/serviciosVuelos';
 
 // Importamos los estilos (se mantienen intactos)
 import {
@@ -25,11 +23,10 @@ const Flights = () => {
   useEffect(() => {
     const cargarServicios = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "servicios"));
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = await cargarServiciosDisponibles();
         
         // FILTRO: Solo guardamos en el estado los que NO estén ocultos
-        setServicios(data.filter(s => s.activo !== false));
+        setServicios(data);
         
       } catch (error) {
         console.error("Error al cargar los servicios:", error);
@@ -86,7 +83,12 @@ const Flights = () => {
                   {servicio.descripcion}
                 </p>
 
-                <BtnReserve as={Link} to="/reservar" style={{ marginTop: 'auto', padding: '10px 20px', fontSize: '0.9rem', width: 'fit-content', alignSelf: 'center' }}>
+                <BtnReserve
+                  as={Link}
+                  to="/reservar"
+                  state={{ tipoVuelo: obtenerTituloServicio(servicio) }}
+                  style={{ marginTop: 'auto', padding: '10px 20px', fontSize: '0.9rem', width: 'fit-content', alignSelf: 'center' }}
+                >
                   Reservar Ahora
                 </BtnReserve>
               </div>

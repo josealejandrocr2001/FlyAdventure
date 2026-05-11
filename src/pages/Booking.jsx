@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'; // IMPORTANTE: Agregamos useEffect
+import { useLocation } from "react-router-dom";
 import { db } from "../config/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore"; // Importamos las herramientas de consulta
+import { cargarServiciosDisponibles, formatearServicioParaSelect, obtenerTituloServicio } from "../services/serviciosVuelos";
+import { consultarPronosticoVuelo } from "../services/pronosticoClima";
 
 // 1. FUNCIÓN PARA GENERAR LOS BLOQUES DE HORARIOS (9am a 4pm)
 const generarHorarios = () => {
@@ -14,10 +17,26 @@ const generarHorarios = () => {
 };
 const bloquesDisponibles = generarHorarios();
 
+const formatearHoraPronostico = (horaIso) => horaIso?.split('T')[1] || '';
+
+const formatearDatoClima = (valor, unidad = '') => {
+  if (valor === null || valor === undefined || Number.isNaN(Number(valor))) {
+    return 'Sin dato';
+  }
+
+  return `${Math.round(Number(valor))}${unidad}`;
+};
+
 const Booking = () => {
-  const [enviado, setEnviado] = useState(false);
+  const location = useLocation();
+  const tipoVueloInicial = typeof location.state?.tipoVuelo === 'string' ? location.state.tipoVuelo : '';
   const [cuposOcupados, setCuposOcupados] = useState({}); // Estado para llevar la cuenta de los cupos
   const [mostrarPago, setMostrarPago] = useState(false);
+  const [serviciosDisponibles, setServiciosDisponibles] = useState([]);
+  const [cargandoServicios, setCargandoServicios] = useState(true);
+  const [pronosticoClima, setPronosticoClima] = useState(null);
+  const [cargandoClima, setCargandoClima] = useState(false);
+  const [errorClima, setErrorClima] = useState('');
 
   const [servicios, setServicios] = useState([]);
 
@@ -41,7 +60,7 @@ const Booking = () => {
     nombre: '',
     email: '',
     telefono: '',
-    tipoVuelo: '',
+    tipoVuelo: tipoVueloInicial,
     fecha: '',
     hora: '', // Nuevo campo
     peso: '',
@@ -56,6 +75,34 @@ const Booking = () => {
       [e.target.name]: e.target.value
     });
   };
+
+  useEffect(() => {
+    let montado = true;
+
+    const cargarServicios = async () => {
+      try {
+        const servicios = await cargarServiciosDisponibles();
+        if (montado) {
+          setServiciosDisponibles(servicios);
+        }
+      } catch (error) {
+        console.error("Error al cargar servicios disponibles:", error);
+        if (montado) {
+          setServiciosDisponibles([]);
+        }
+      } finally {
+        if (montado) {
+          setCargandoServicios(false);
+        }
+      }
+    };
+
+    cargarServicios();
+
+    return () => {
+      montado = false;
+    };
+  }, []);
 
   // 3. CONSULTAR DISPONIBILIDAD AL CAMBIAR LA FECHA
   useEffect(() => {
@@ -95,6 +142,54 @@ const Booking = () => {
   }, [formData.fecha]); // Este useEffect se dispara cada vez que cambia formData.fecha
 
   // Función para enviar a la base de datos
+  useEffect(() => {
+    let montado = true;
+    const controlador = new AbortController();
+
+    const cargarPronostico = async () => {
+      if (!formData.fecha || !formData.hora) {
+        setPronosticoClima(null);
+        setErrorClima('');
+        setCargandoClima(false);
+        return;
+      }
+
+      setCargandoClima(true);
+      setErrorClima('');
+
+      try {
+        const pronostico = await consultarPronosticoVuelo({
+          fecha: formData.fecha,
+          hora: formData.hora,
+          signal: controlador.signal
+        });
+
+        if (montado) {
+          setPronosticoClima(pronostico);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+
+        console.error("Error al consultar clima:", error);
+        if (montado) {
+          setPronosticoClima(null);
+          setErrorClima(error.message || 'No se pudo consultar el pronostico.');
+        }
+      } finally {
+        if (montado) {
+          setCargandoClima(false);
+        }
+      }
+    };
+
+    cargarPronostico();
+
+    return () => {
+      montado = false;
+      controlador.abort();
+    };
+  }, [formData.fecha, formData.hora]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -160,16 +255,25 @@ Quedo atento a los métodos de pago para confirmar mi cupo.`;
 
               <div className="input-group">
                 <label>Tipo de Vuelo</label>
-                <select name="tipoVuelo" value={formData.tipoVuelo} onChange={handleChange} required>
-                  <option value="">Selecciona un plan</option>
-                  
-                  {/* NUEVO: Mapeamos los servicios desde Firebase */}
-                  {servicios.map(servicio => (
-                    <option key={servicio.id} value={servicio.titulo}>
-                      {servicio.titulo} - ${Number(servicio.precio).toLocaleString('es-CO')}
+                <select
+                  name="tipoVuelo"
+                  value={formData.tipoVuelo}
+                  onChange={handleChange}
+                  required
+                  disabled={cargandoServicios || serviciosDisponibles.length === 0}
+                >
+                  <option value="">
+                    {cargandoServicios
+                      ? "Cargando planes..."
+                      : serviciosDisponibles.length > 0
+                        ? "Selecciona un plan"
+                        : "No hay planes disponibles"}
+                  </option>
+                  {serviciosDisponibles.map((servicio) => (
+                    <option key={servicio.id} value={obtenerTituloServicio(servicio)}>
+                      {formatearServicioParaSelect(servicio)}
                     </option>
                   ))}
-
                 </select>
               </div>
 
@@ -218,6 +322,61 @@ Quedo atento a los métodos de pago para confirmar mi cupo.`;
             </div>
 
             {/* 1. ESTE ES EL NUEVO BOTÓN (Reemplaza al anterior) */}
+            {formData.fecha && formData.hora && (
+              <div className="weather-widget">
+                {cargandoClima && (
+                  <p className="weather-loading">Consultando pronostico para tu vuelo...</p>
+                )}
+
+                {!cargandoClima && errorClima && (
+                  <div className="weather-error">
+                    <h3>Pronostico no disponible</h3>
+                    <p>{errorClima}</p>
+                  </div>
+                )}
+
+                {!cargandoClima && pronosticoClima && (
+                  <>
+                    <div className="weather-header">
+                      <div>
+                        <span className="weather-eyebrow">Pronostico del clima</span>
+                        <h3>{pronosticoClima.descripcion}</h3>
+                        <p>
+                          {formData.fecha} cerca de las {formatearHoraPronostico(pronosticoClima.horaPronostico)}
+                        </p>
+                      </div>
+                      <div className={`weather-badge weather-badge-${pronosticoClima.recomendacion.nivel}`}>
+                        {pronosticoClima.recomendacion.titulo}
+                      </div>
+                    </div>
+
+                    <div className="weather-metrics">
+                      <div>
+                        <span>Temperatura</span>
+                        <strong>{formatearDatoClima(pronosticoClima.temperatura, ' C')}</strong>
+                      </div>
+                      <div>
+                        <span>Lluvia</span>
+                        <strong>{formatearDatoClima(pronosticoClima.probabilidadLluvia, '%')}</strong>
+                      </div>
+                      <div>
+                        <span>Viento</span>
+                        <strong>{formatearDatoClima(pronosticoClima.velocidadViento, ' km/h')}</strong>
+                      </div>
+                      <div>
+                        <span>Rafagas</span>
+                        <strong>{formatearDatoClima(pronosticoClima.rafagasViento, ' km/h')}</strong>
+                      </div>
+                    </div>
+
+                    <p className="weather-recommendation">
+                      {pronosticoClima.recomendacion.texto}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
             {!mostrarPago && (
               <button type="submit" className="btn-reserve">
                 Proceder al Pago

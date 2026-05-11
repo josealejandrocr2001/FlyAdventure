@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../config/firebase';
 // IMPORTANTE: Agregamos addDoc aquí
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
@@ -6,9 +6,70 @@ import emailjs from '@emailjs/browser';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import './AdminPanel.css';
+import { cargarServiciosDeVuelo, formatearServicioParaSelect, obtenerTituloServicio, servicioEstaDisponible } from '../services/serviciosVuelos';
 
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
+
+const obtenerReservas = async () => {
+  const querySnapshot = await getDocs(collection(db, "reservas"));
+  return querySnapshot.docs.map((documento) => ({ id: documento.id, ...documento.data() }));
+};
+
+const normalizarTexto = (valor = '') => valor.toString().trim().toLowerCase();
+
+const obtenerEstadoReserva = (reserva) => {
+  const estado = normalizarTexto(reserva.estado || 'pendiente');
+
+  if (['pagado', 'confirmada', 'confirmado', 'aprobada', 'aprobado'].includes(estado)) {
+    return 'confirmada';
+  }
+
+  if (['cancelada', 'cancelado', 'eliminada', 'eliminado'].includes(estado)) {
+    return 'cancelada';
+  }
+
+  return 'pendiente';
+};
+
+const obtenerEtiquetaEstado = (reserva) => {
+  const estado = obtenerEstadoReserva(reserva);
+
+  if (estado === 'confirmada') return 'Confirmada';
+  if (estado === 'cancelada') return 'Cancelada';
+  return 'Pendiente';
+};
+
+const obtenerFechaComoDate = (valor) => {
+  if (!valor) return null;
+  if (typeof valor.toDate === 'function') return valor.toDate();
+  if (typeof valor === 'string') {
+    const fecha = new Date(valor);
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+  if (typeof valor.seconds === 'number') return new Date(valor.seconds * 1000);
+  return null;
+};
+
+const formatearFechaCreacion = (valor) => {
+  const fecha = obtenerFechaComoDate(valor);
+
+  if (!fecha) return 'Sin registro';
+
+  return fecha.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+const obtenerValorOrdenFecha = (reserva) => {
+  const fechaCreacion = obtenerFechaComoDate(reserva.fechaCreacion);
+  if (fechaCreacion) return fechaCreacion.getTime();
+
+  const fechaVuelo = obtenerFechaComoDate(reserva.fecha);
+  return fechaVuelo ? fechaVuelo.getTime() : 0;
+};
 
 export const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
@@ -17,6 +78,11 @@ export const AdminPanel = () => {
   const [reservas, setReservas] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [reservaEditando, setReservaEditando] = useState(null);
+  const [busquedaReservas, setBusquedaReservas] = useState('');
+  const [filtroFechaReserva, setFiltroFechaReserva] = useState('');
+  const [filtroEstadoReserva, setFiltroEstadoReserva] = useState('');
+  const [filtroTipoReserva, setFiltroTipoReserva] = useState('');
+  const [ordenFechaReserva, setOrdenFechaReserva] = useState('desc');
 
   // Estados de Servicios
   const [servicios, setServicios] = useState([]);
@@ -27,19 +93,39 @@ export const AdminPanel = () => {
 
   // --- CARGA DE DATOS ---
   const cargarReservas = async () => {
-    const querySnapshot = await getDocs(collection(db, "reservas"));
-    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const data = await obtenerReservas();
     setReservas(data);
   };
 
   const cargarServicios = async () => {
-    const querySnapshot = await getDocs(collection(db, "servicios"));
-    setServicios(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const data = await cargarServiciosDeVuelo();
+    setServicios(data);
   };
 
   useEffect(() => {
-    cargarReservas();
-    cargarServicios();
+    let montado = true;
+
+    const cargarDatosIniciales = async () => {
+      try {
+        const [reservasData, serviciosData] = await Promise.all([
+          obtenerReservas(),
+          cargarServiciosDeVuelo()
+        ]);
+
+        if (montado) {
+          setReservas(reservasData);
+          setServicios(serviciosData);
+        }
+      } catch (error) {
+        console.error("Error al cargar datos del panel:", error);
+      }
+    };
+
+    cargarDatosIniciales();
+
+    return () => {
+      montado = false;
+    };
   }, []);
 
   // --- CRUD RESERVAS ---
@@ -127,7 +213,46 @@ export const AdminPanel = () => {
     cargarServicios();
   };
 
+  const serviciosDisponibles = servicios.filter(servicioEstaDisponible);
+  const servicioActualNoDisponible = reservaEditando?.tipoVuelo
+    && !serviciosDisponibles.some((servicio) => obtenerTituloServicio(servicio) === reservaEditando.tipoVuelo);
+
   // --- VARIABLES PARA LAS GRÁFICAS ---
+  const tiposReserva = useMemo(() => {
+    const tipos = reservas
+      .map((reserva) => reserva.tipoVuelo)
+      .filter(Boolean);
+
+    return [...new Set(tipos)].sort((a, b) => a.localeCompare(b));
+  }, [reservas]);
+
+  const resumenReservas = useMemo(() => ({
+    total: reservas.length,
+    pendientes: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'pendiente').length,
+    confirmadas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'confirmada').length,
+    canceladas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'cancelada').length
+  }), [reservas]);
+
+  const reservasFiltradas = useMemo(() => {
+    const busqueda = normalizarTexto(busquedaReservas);
+
+    return reservas
+      .filter((reserva) => {
+        const coincideBusqueda = !busqueda
+          || normalizarTexto(reserva.nombre).includes(busqueda)
+          || normalizarTexto(reserva.documento).includes(busqueda);
+        const coincideFecha = !filtroFechaReserva || reserva.fecha === filtroFechaReserva;
+        const coincideEstado = !filtroEstadoReserva || obtenerEstadoReserva(reserva) === filtroEstadoReserva;
+        const coincideTipo = !filtroTipoReserva || reserva.tipoVuelo === filtroTipoReserva;
+
+        return coincideBusqueda && coincideFecha && coincideEstado && coincideTipo;
+      })
+      .sort((a, b) => {
+        const diferencia = obtenerValorOrdenFecha(a) - obtenerValorOrdenFecha(b);
+        return ordenFechaReserva === 'asc' ? diferencia : -diferencia;
+      });
+  }, [reservas, busquedaReservas, filtroFechaReserva, filtroEstadoReserva, filtroTipoReserva, ordenFechaReserva]);
+
   const ejecutados = reservas.filter(item => item.fecha < hoy).length;
   const cancelados = 2;
   const pendientes = reservas.length;
@@ -139,7 +264,7 @@ export const AdminPanel = () => {
     datasets: [{
       label: 'Vuelos',
       data: [ejecutados, cancelados, pendientes],
-      backgroundColor: ['#4FB3FF', '#e74c3c', '#FFC300']
+      backgroundColor: ['#4FB3FF', '#e74c3c', '#FFB703']
     }]
   };
 
@@ -155,7 +280,7 @@ export const AdminPanel = () => {
     labels: ['Reservas', 'Restante'],
     datasets: [{
       data: [porcentaje, 100 - porcentaje],
-      backgroundColor: ['#FFC300', '#4FB3FF']
+      backgroundColor: ['#FFB703', '#4FB3FF']
     }]
   };
 
@@ -163,7 +288,7 @@ export const AdminPanel = () => {
     <div className="admin-container">
       {/* SIDEBAR */}
       <div className="sidebar">
-        <h2>Fly <span>Adventure</span></h2>
+        {/* <h2>Fly <span>Adventure</span></h2> */}
         <div className="menu-item" onClick={() => setVistaActual('dashboard')}>Dashboard</div>
         <div className="menu-item" onClick={() => setVistaActual('vuelos')}>Modificar reserva</div>
         <div className="menu-item" onClick={() => setVistaActual('servicios')}>Servicios de Vuelo</div>
@@ -184,7 +309,7 @@ export const AdminPanel = () => {
               <div className="card"><h4>Promedio reservas</h4><p>{porcentaje}%</p></div>
             </div>
 
-            <div style={{ display: 'flex', gap: '20px', marginTop: '30px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '30px', flexWrap: 'wrap', justifyContent: 'space-evenly', alignItems: 'center' }}>
               <div style={{ width: '300px', height: '300px' }}>
                 <Bar data={datosBarra} options={{ maintainAspectRatio: false }} />
               </div>
@@ -199,6 +324,139 @@ export const AdminPanel = () => {
         )}
 
         {vistaActual === 'vuelos' && (
+          <div className="reservas-view">
+            <div className="reservas-header">
+              <h2>Gestion de Reservas</h2>
+              <p>Consulta, filtra y actualiza las reservas registradas.</p>
+            </div>
+
+            <div className="reservation-summary-grid">
+              <div className="reservation-summary-card">
+                <span>Total reservas</span>
+                <strong>{resumenReservas.total}</strong>
+              </div>
+              <div className="reservation-summary-card">
+                <span>Pendientes</span>
+                <strong>{resumenReservas.pendientes}</strong>
+              </div>
+              <div className="reservation-summary-card">
+                <span>Confirmadas</span>
+                <strong>{resumenReservas.confirmadas}</strong>
+              </div>
+              <div className="reservation-summary-card">
+                <span>Canceladas</span>
+                <strong>{resumenReservas.canceladas}</strong>
+              </div>
+            </div>
+
+            <div className="reservation-filters">
+              <div className="reservation-search">
+                <input
+                  type="search"
+                  value={busquedaReservas}
+                  onChange={(e) => setBusquedaReservas(e.target.value)}
+                  placeholder="Buscar nombre o cedula"
+                />
+              </div>
+
+              <input
+                type="date"
+                value={filtroFechaReserva}
+                onChange={(e) => setFiltroFechaReserva(e.target.value)}
+                title="Filtrar por fecha de vuelo"
+              />
+
+              <button
+                type="button"
+                className="sort-date-button"
+                onClick={() => setOrdenFechaReserva(ordenFechaReserva === 'desc' ? 'asc' : 'desc')}
+                title="Ordenar por fecha de creacion"
+              >
+                {ordenFechaReserva === 'desc' ? 'Fecha reciente' : 'Fecha antigua'}
+              </button>
+
+              <select
+                value={filtroEstadoReserva}
+                onChange={(e) => setFiltroEstadoReserva(e.target.value)}
+                title="Filtrar por estado"
+              >
+                <option value="">Todos los estados</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="confirmada">Confirmadas</option>
+                <option value="cancelada">Canceladas</option>
+              </select>
+
+              <select
+                value={filtroTipoReserva}
+                onChange={(e) => setFiltroTipoReserva(e.target.value)}
+                title="Filtrar por tipo de vuelo"
+              >
+                <option value="">Todos los tipos</option>
+                {tiposReserva.map((tipo) => (
+                  <option key={tipo} value={tipo}>{tipo}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="reservations-table-card">
+              <div className="reservations-table-wrap">
+                <table className="reservations-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha creacion</th>
+                      <th>Nombre</th>
+                      <th>Documento</th>
+                      <th>Tipo</th>
+                      <th>Fecha vuelo</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reservasFiltradas.map(r => (
+                      <tr key={r.id}>
+                        <td>{formatearFechaCreacion(r.fechaCreacion)}</td>
+                        <td className="reservation-name-cell">{r.nombre || 'Sin nombre'}</td>
+                        <td>{r.documento || 'Sin documento'}</td>
+                        <td>{r.tipoVuelo || 'Sin tipo'}</td>
+                        <td>{r.fecha || 'Sin fecha'}</td>
+                        <td>
+                          <span className={`status-pill status-pill-${obtenerEstadoReserva(r)}`}>
+                            {obtenerEtiquetaEstado(r)}
+                          </span>
+                        </td>
+                        <td className="actions">
+                          {obtenerEstadoReserva(r) !== 'confirmada' && (
+                            <button
+                              onClick={() => confirmarPago(r)}
+                              style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }}
+                              title="Confirmar Pago"
+                            >
+                              {"\u2705"}
+                            </button>
+                          )}
+
+                          <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>{"\u270F\uFE0F"}</button>
+                          <button onClick={() => handleEliminar(r.id)} style={{ background: '#e74c3c', color: 'white' }}>{"\uD83D\uDDD1\uFE0F"}</button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {reservasFiltradas.length === 0 && (
+                      <tr>
+                        <td colSpan="7" className="empty-reservations">
+                          No hay reservas que coincidan con los filtros.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {vistaActual === '__legacy_vuelos' && (
           <div className="card">
             <h2>Gestión de Reservas</h2>
             <table>
@@ -255,7 +513,7 @@ export const AdminPanel = () => {
               <button
                 onClick={() => { setServicioEditando({ id: '', titulo: '', precio: '', descripcion: '', imagen: '' }); setModalServicioAbierto(true); }}
                 style={{
-                  background: 'linear-gradient(135deg, #FFC300 0%, #f39c12 100%)',
+                  background: 'linear-gradient(135deg, #FFB703 0%, #f39c12 100%)',
                   color: '#ffffff',
                   border: 'none',
                   padding: '12px 28px',
@@ -356,10 +614,19 @@ export const AdminPanel = () => {
               <select
                 value={reservaEditando.tipoVuelo}
                 onChange={e => setReservaEditando({ ...reservaEditando, tipoVuelo: e.target.value })}
+                required
               >
-                <option value="tradicional">Tradicional</option>
-                <option value="extremo">Extremo</option>
-                <option value="pareja">Pareja</option>
+                <option value="">Selecciona un plan</option>
+                {servicioActualNoDisponible && (
+                  <option value={reservaEditando.tipoVuelo}>
+                    {reservaEditando.tipoVuelo} (actual, no disponible)
+                  </option>
+                )}
+                {serviciosDisponibles.map((servicio) => (
+                  <option key={servicio.id} value={obtenerTituloServicio(servicio)}>
+                    {formatearServicioParaSelect(servicio)}
+                  </option>
+                ))}
               </select>
               <input
                 type="date"

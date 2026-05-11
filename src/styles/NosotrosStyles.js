@@ -26,7 +26,7 @@ export const HeroContainer = styled.section`
     margin: 0;
 
     span {
-      color: #FFC300; /* Amarillo para resaltar */
+      color: #FFB703; /* Amarillo para resaltar */
     }
   }
 
