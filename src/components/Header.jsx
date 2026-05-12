@@ -34,13 +34,11 @@ const Header = () => {
         <Link to="/reservar">Reservas</Link>
         <Link to="/nosotros">Nosotros</Link>
         
-        {user ? (
+        {user && (
           <>
             <Link to="/admin-panel" className="nav-admin-link">Panel Admin</Link>
             <button onClick={handleLogout}>Cerrar sesión</button>
           </>
-        ) : (
-          <Link to="/admin">Admin</Link>
         )}
       </nav>
     </header>
