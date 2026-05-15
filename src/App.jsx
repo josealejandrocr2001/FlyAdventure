@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Encuesta } from './pages/Encuesta'; // Ajusta la ruta según tu carpeta
 
 // Firebase (Para la autenticación)
 import { auth } from "./config/firebase";
@@ -62,6 +63,7 @@ function App() {
           <Route path="/reservar" element={<Booking />} />
           <Route path="/nosotros" element={<Nosotros />} />
           <Route path="/vuelos" element={<Flights />} />
+          <Route path="/encuesta/:id" element={<Encuesta />} />
           
           {/* Ruta del Login (La que tú ya tenías) */}
           <Route path="/admin" element={<Login />} />
@@ -86,49 +88,5 @@ function App() {
 
 export default App;
 
-/*
-// src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-
-// Componentes
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-
-// Páginas
-import Home from "./pages/Home";
-import Booking from "./pages/Booking";
-import Nosotros from "./pages/Nosotros";
-import Flights from './pages/Flights';
-import Login from './pages/Login';
-
-// Estilos
-import "./index.css";
-
-function App() {
-  return (
-    <Router>
-
-      {}
-      <Header />
-
-      {}
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/reservar" element={<Booking />} />
-          <Route path="/nosotros" element={<Nosotros />} />
-          <Route path="/vuelos" element={<Flights />} />
-          <Route path="/admin" element={<Login />} />
-        </Routes>
-      </main>
-
-      {}
-      <Footer />
-
-    </Router>
-  );
-}
-
-export default App;*/
 

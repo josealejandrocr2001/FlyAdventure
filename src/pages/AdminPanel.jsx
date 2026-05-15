@@ -21,13 +21,9 @@ const normalizarTexto = (valor = '') => valor.toString().trim().toLowerCase();
 const obtenerEstadoReserva = (reserva) => {
   const estado = normalizarTexto(reserva.estado || 'pendiente');
 
-  if (['pagado', 'confirmada', 'confirmado', 'aprobada', 'aprobado'].includes(estado)) {
-    return 'confirmada';
-  }
-
-  if (['cancelada', 'cancelado', 'eliminada', 'eliminado'].includes(estado)) {
-    return 'cancelada';
-  }
+  if (['pagado', 'confirmada', 'confirmado', 'aprobada', 'aprobado'].includes(estado)) return 'confirmada';
+  if (['ejecutada', 'ejecutado'].includes(estado)) return 'ejecutada';
+  if (['cancelada', 'cancelado', 'eliminada', 'eliminado'].includes(estado)) return 'cancelada';
 
   return 'pendiente';
 };
@@ -36,6 +32,7 @@ const obtenerEtiquetaEstado = (reserva) => {
   const estado = obtenerEstadoReserva(reserva);
 
   if (estado === 'confirmada') return 'Confirmada';
+  if (estado === 'ejecutada') return 'Ejecutada';
   if (estado === 'cancelada') return 'Cancelada';
   return 'Pendiente';
 };
@@ -145,10 +142,38 @@ export const AdminPanel = () => {
     cargarReservas();
   };
 
-  const handleEliminar = async (id) => {
-    if (window.confirm('¿Seguro que deseas eliminar esta reserva?')) {
-      await deleteDoc(doc(db, "reservas", id));
+  const handleEliminar = async (reserva) => {
+    if (window.confirm('¿Seguro que deseas cancelar esta reserva?')) {
+      const ref = doc(db, "reservas", reserva.id);
+      await updateDoc(ref, { estado: "Cancelada" });
       cargarReservas();
+    }
+  };
+
+  const marcarEjecutado = async (reserva) => {
+    if (!window.confirm('¿Marcar vuelo como Ejecutado y enviar encuesta al cliente?')) return;
+
+    try {
+      const ref = doc(db, "reservas", reserva.id);
+      await updateDoc(ref, { estado: "Ejecutado" });
+
+      const templateParams = {
+        to_name: reserva.nombre,
+        to_email: reserva.email,
+        link_encuesta: `https://fly-adventure.vercel.app//encuesta/${reserva.id}` 
+      };
+
+      await emailjs.send(
+        'service_c2u0zrv', 
+        'template_9g1oxkj', // <-- ID del nuevo template en EmailJS
+        templateParams,
+        'aH1VCX_BLmcB3s77H'
+      );
+
+      alert("✅ Vuelo ejecutado y correo de satisfacción enviado.");
+      cargarReservas();
+    } catch (error) {
+      console.error("Error al marcar como ejecutado:", error);
     }
   };
 
@@ -230,6 +255,7 @@ export const AdminPanel = () => {
     total: reservas.length,
     pendientes: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'pendiente').length,
     confirmadas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'confirmada').length,
+    ejecutadas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'ejecutada').length,
     canceladas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'cancelada').length
   }), [reservas]);
 
@@ -253,12 +279,28 @@ export const AdminPanel = () => {
       });
   }, [reservas, busquedaReservas, filtroFechaReserva, filtroEstadoReserva, filtroTipoReserva, ordenFechaReserva]);
 
-  const ejecutados = reservas.filter(item => item.fecha < hoy).length;
-  const cancelados = 2;
-  const pendientes = reservas.length;
-  const satisfaccion = 85;
-  const porcentaje = ((reservas.length / (reservas.length + 5)) * 100).toFixed(1);
+  // 1. Datos básicos usando el useMemo 'resumenReservas' que ya tenías
+  const ejecutados = resumenReservas.ejecutadas || 0;
+  const cancelados = resumenReservas.canceladas || 0;
+  const pendientes = resumenReservas.pendientes || 0;
 
+  // 2. Cálculo de Satisfacción de Encuestas
+  // Buscamos las reservas que tengan el campo 'satisfaccion' registrado
+  const encuestasRespondidas = reservas.filter(r => r.satisfaccion !== undefined && r.satisfaccion !== "");
+  const satisfechos = encuestasRespondidas.filter(r => r.satisfaccion === 'satisfecho' || r.satisfaccion === true).length;
+  const noSatisfechos = encuestasRespondidas.length - satisfechos;
+  
+  const satisfaccionPorcentaje = encuestasRespondidas.length > 0 
+    ? Math.round((satisfechos / encuestasRespondidas.length) * 100) 
+    : 0;
+
+  // 3. Promedio (Tasa de Efectividad)
+  const totalValidas = resumenReservas.total || 0;
+  const porcentajeEjecutadas = totalValidas > 0 
+    ? ((ejecutados / totalValidas) * 100).toFixed(1) 
+    : 0;
+
+  // --- CONFIGURACIÓN DE GRÁFICAS ---
   const datosBarra = {
     labels: ['Ejecutados', 'Cancelados', 'Pendientes'],
     datasets: [{
@@ -269,30 +311,31 @@ export const AdminPanel = () => {
   };
 
   const datosSatisfaccion = {
-    labels: ['Satisfechos', 'No'],
+    labels: ['Satisfechos', 'No Satisfechos'],
     datasets: [{
-      data: [satisfaccion, 100 - satisfaccion],
-      backgroundColor: ['#4FB3FF', '#e74c3c']
+      // Si no hay encuestas, muestra un gráfico gris. Si hay, muestra los datos reales.
+      data: encuestasRespondidas.length > 0 ? [satisfechos, noSatisfechos] : [1],
+      backgroundColor: encuestasRespondidas.length > 0 ? ['#2ecc71', '#e74c3c'] : ['#eef2f6'],
     }]
   };
 
   const datosPromedio = {
-    labels: ['Reservas', 'Restante'],
+    labels: ['Ejecutadas', 'Otras'],
     datasets: [{
-      data: [porcentaje, 100 - porcentaje],
-      backgroundColor: ['#FFB703', '#4FB3FF']
+      data: [ejecutados, totalValidas - ejecutados],
+      backgroundColor: ['#FFB703', '#eef2f6']
     }]
   };
 
   return (
     <div className="admin-container">
+
       {/* SIDEBAR */}
       <div className="sidebar">
         {/* <h2>Fly <span>Adventure</span></h2> */}
         <div className="menu-item" onClick={() => setVistaActual('dashboard')}>Dashboard</div>
         <div className="menu-item" onClick={() => setVistaActual('vuelos')}>Modificar reserva</div>
         <div className="menu-item" onClick={() => setVistaActual('servicios')}>Servicios de Vuelo</div>
-        <div className="menu-item" onClick={() => setVistaActual('usuarios')}>Crear usuario admin</div>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -305,8 +348,8 @@ export const AdminPanel = () => {
               <div className="card"><h4>Ejecutados</h4><p>{ejecutados}</p></div>
               <div className="card"><h4>Cancelados</h4><p>{cancelados}</p></div>
               <div className="card"><h4>Pendientes</h4><p>{pendientes}</p></div>
-              <div className="card"><h4>Satisfacción</h4><p>{satisfaccion}%</p></div>
-              <div className="card"><h4>Promedio reservas</h4><p>{porcentaje}%</p></div>
+              <div className="card"><h4>Satisfacción</h4><p>{satisfaccionPorcentaje}%</p></div>
+              <div className="card"><h4>Promedio reservas</h4><p>{porcentajeEjecutadas}%</p></div>
             </div>
 
             <div style={{ display: 'flex', gap: '20px', marginTop: '30px', flexWrap: 'wrap', justifyContent: 'space-evenly', alignItems: 'center' }}>
@@ -342,6 +385,10 @@ export const AdminPanel = () => {
               <div className="reservation-summary-card">
                 <span>Confirmadas</span>
                 <strong>{resumenReservas.confirmadas}</strong>
+              </div>
+              <div className="reservation-summary-card">
+                <span>Ejecutadas</span>
+                <strong>{resumenReservas.ejecutadas}</strong>
               </div>
               <div className="reservation-summary-card">
                 <span>Canceladas</span>
@@ -383,6 +430,7 @@ export const AdminPanel = () => {
                 <option value="">Todos los estados</option>
                 <option value="pendiente">Pendientes</option>
                 <option value="confirmada">Confirmadas</option>
+                <option value="ejecutada">Ejecutadas</option>
                 <option value="cancelada">Canceladas</option>
               </select>
 
@@ -426,18 +474,18 @@ export const AdminPanel = () => {
                           </span>
                         </td>
                         <td className="actions">
-                          {obtenerEstadoReserva(r) !== 'confirmada' && (
-                            <button
-                              onClick={() => confirmarPago(r)}
-                              style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }}
-                              title="Confirmar Pago"
-                            >
-                              {"\u2705"}
-                            </button>
+                          {/* Botón Confirmar Pago (solo en pendientes) */}
+                          {obtenerEstadoReserva(r) === 'pendiente' && (
+                            <button onClick={() => confirmarPago(r)} style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }} title="Confirmar Pago">✅</button>
+                          )}
+                          {/* NUEVO: Botón Ejecutar Vuelo (solo en confirmadas) */}
+                          {obtenerEstadoReserva(r) === 'confirmada' && (
+                            <button onClick={() => marcarEjecutado(r)} style={{ background: '#3498db', color: 'white', marginRight: '10px' }} title="Marcar como Ejecutado">🛫</button>
                           )}
 
-                          <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>{"\u270F\uFE0F"}</button>
-                          <button onClick={() => handleEliminar(r.id)} style={{ background: '#e74c3c', color: 'white' }}>{"\uD83D\uDDD1\uFE0F"}</button>
+                          <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>✏️</button>
+                          {/* Actualizado para cancelar en lugar de borrar */}
+                          <button onClick={() => handleEliminar(r)} style={{ background: '#e74c3c', color: 'white' }}>🗑️</button>
                         </td>
                       </tr>
                     ))}

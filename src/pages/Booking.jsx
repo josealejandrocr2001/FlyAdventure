@@ -211,11 +211,11 @@ const Booking = () => {
   const generarEnlaceWhatsapp = () => {
     const telefono = "573332642395"; // Tu número de FlyAdventure
     const mensaje = `¡Hola Fly Adventure! 👋 Requiero completar mi reserva:
-📌 *Nombre:* ${formData.nombre}
-📌 *Vuelo:* ${formData.tipoVuelo}
-📌 *Fecha:* ${formData.fecha}
-📌 *Hora:* ${formData.hora}
-💰 *Documento:* ${formData.documento}
+📌*Nombre:* ${formData.nombre}
+📌*Vuelo:* ${formData.tipoVuelo}
+📌*Fecha:* ${formData.fecha}
+📌*Hora:* ${formData.hora}
+📌*Documento:* ${formData.documento}
 
 Quedo atento a los métodos de pago para confirmar mi cupo.`;
 
