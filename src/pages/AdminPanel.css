@@ -11,10 +11,13 @@
 
 .sidebar {
   width: 250px;
-  background: #fff;
-  padding: 25px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  flex-shrink: 0; /* Evitar que el sidebar se aplaste */
+  background-color: #1a4a7c; /* Azul corporativo */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding-top: 30px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  min-height: 100vh;
 }
 
 .sidebar h2 {
@@ -27,15 +30,27 @@
 }
 
 .menu-item {
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  padding: 16px 24px;
   cursor: pointer;
-  transition: background 0.2s;
+  font-weight: 500;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  color: #b3cce6; /* Letra azul claro */
+  border-left: 5px solid transparent;
 }
 
 .menu-item:hover {
-  background: #FFB703;
+  background-color: #113357; /* Azul más oscuro */
+  color: white;
+}
+
+.menu-item.active {
+  background-color: #113357;
+  color: #FFB703; /* Amarillo corporativo de Fly Adventure */
+  border-left: 5px solid #FFB703;
 }
 
 .content {

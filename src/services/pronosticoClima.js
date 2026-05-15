@@ -61,7 +61,7 @@ const evaluarRecomendacion = ({
     return {
       nivel: 'malo',
       titulo: 'No recomendable',
-      texto: 'Las condiciones previstas no se ven favorables para volar. Confirma con el piloto antes de avanzar con esta hora.'
+      texto: 'Por tu seguridad, el sistema no permite reservas bajo estas condiciones climáticas. Por favor, selecciona una fecha u hora diferente.'
     };
   }
 

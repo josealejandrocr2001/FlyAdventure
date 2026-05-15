@@ -224,6 +224,8 @@ Quedo atento a los métodos de pago para confirmar mi cupo.`;
 
   const hoy = new Date().toISOString().split('T')[0];
 
+  const climaNoApto = pronosticoClima && pronosticoClima.recomendacion.nivel === 'malo';
+
   return (
     <main className="reservas-page">
       <section className="hero-container" style={{ height: '40vh' }}>
@@ -377,9 +379,15 @@ Quedo atento a los métodos de pago para confirmar mi cupo.`;
               </div>
             )}
 
+            {/* 1. BOTÓN DE PAGO DINÁMICO */}
             {!mostrarPago && (
-              <button type="submit" className="btn-reserve">
-                Proceder al Pago
+              <button 
+                type="submit" 
+                className="btn-reserve"
+                disabled={climaNoApto}
+                style={climaNoApto ? { backgroundColor: '#ccc', cursor: 'not-allowed', opacity: 0.7 } : {}}
+              >
+                {climaNoApto ? "Elige otro horario (Clima no apto)" : "Proceder al Pago"}
               </button>
             )}
           </form>

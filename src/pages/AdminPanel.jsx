@@ -332,10 +332,24 @@ export const AdminPanel = () => {
 
       {/* SIDEBAR */}
       <div className="sidebar">
-        {/* <h2>Fly <span>Adventure</span></h2> */}
-        <div className="menu-item" onClick={() => setVistaActual('dashboard')}>Dashboard</div>
-        <div className="menu-item" onClick={() => setVistaActual('vuelos')}>Modificar reserva</div>
-        <div className="menu-item" onClick={() => setVistaActual('servicios')}>Servicios de Vuelo</div>
+        <div 
+          className={`menu-item ${vistaActual === 'dashboard' ? 'active' : ''}`} 
+          onClick={() => setVistaActual('dashboard')}
+        >
+          📊 Dashboard
+        </div>
+        <div 
+          className={`menu-item ${vistaActual === 'vuelos' ? 'active' : ''}`} 
+          onClick={() => setVistaActual('vuelos')}
+        >
+          📝 Gestión de Reservas
+        </div>
+        <div 
+          className={`menu-item ${vistaActual === 'servicios' ? 'active' : ''}`} 
+          onClick={() => setVistaActual('servicios')}
+        >
+          🪂 Servicios de Vuelo
+        </div>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -373,7 +387,7 @@ export const AdminPanel = () => {
               <p>Consulta, filtra y actualiza las reservas registradas.</p>
             </div>
 
-            <div className="reservation-summary-grid">
+            <div className="reservation-summary-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
               <div className="reservation-summary-card">
                 <span>Total reservas</span>
                 <strong>{resumenReservas.total}</strong>
