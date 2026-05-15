@@ -154,26 +154,39 @@ export const AdminPanel = () => {
     if (!window.confirm('¿Marcar vuelo como Ejecutado y enviar encuesta al cliente?')) return;
 
     try {
+      // 1. Verificamos que el ID exista antes de seguir
+      if (!reserva.id) {
+        alert("Error: La reserva no tiene un ID válido.");
+        return;
+      }
+
       const ref = doc(db, "reservas", reserva.id);
       await updateDoc(ref, { estado: "Ejecutado" });
+
+      // 2. Construimos el link (asegúrate de que estas sean comillas invertidas)
+      const urlEncuesta = `https://fly-adventure.vercel.app/encuesta/${reserva.id}`;
+      
+      // 3. ESTO ES PARA TI: Mira la consola del navegador (F12) al darle clic al botón
+      console.log("Enviando link:", urlEncuesta);
 
       const templateParams = {
         to_name: reserva.nombre,
         to_email: reserva.email,
-        link_encuesta: `https://fly-adventure.vercel.app//encuesta/${reserva.id}`
+        link_encuesta: urlEncuesta 
       };
 
       await emailjs.send(
         'service_c2u0zrv', 
-        'template_9g1oxkj', // <-- ID del nuevo template en EmailJS
+        'TU_TEMPLATE_ENCUESTA_ID', // Asegúrate de que este ID sea el nuevo de la encuesta
         templateParams,
         'aH1VCX_BLmcB3s77H'
       );
 
-      alert("✅ Vuelo ejecutado y correo de satisfacción enviado.");
+      alert("✅ Vuelo ejecutado y correo de encuesta enviado.");
       cargarReservas();
     } catch (error) {
-      console.error("Error al marcar como ejecutado:", error);
+      console.error("Error completo:", error);
+      alert("Error al procesar: " + error.message);
     }
   };
 
