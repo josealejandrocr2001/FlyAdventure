@@ -160,7 +160,7 @@ export const AdminPanel = () => {
       const templateParams = {
         to_name: reserva.nombre,
         to_email: reserva.email,
-        link_encuesta: `https://fly-adventure.vercel.app//encuesta/${reserva.id}` 
+        link_encuesta: `https://fly-adventure.vercel.app//encuesta/${reserva.id}`
       };
 
       await emailjs.send(
