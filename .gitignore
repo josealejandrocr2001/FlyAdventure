@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Variables de entorno (credenciales): nunca al repositorio
+.env
+.env.*
+!.env.example
+server/node_modules
+
+# Cypress
+cypress/videos
+cypress/screenshots

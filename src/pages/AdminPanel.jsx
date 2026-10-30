@@ -1,359 +1,310 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../config/firebase';
-// IMPORTANTE: Agregamos addDoc aquí
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import emailjs from '@emailjs/browser';
+// Panel del Administrador: indicadores, reservas, servicios y usuarios.
+// Todos los datos vienen de la API (MySQL); nada se escribe directo a la base de datos.
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import './AdminPanel.css';
-import { cargarServiciosDeVuelo, formatearServicioParaSelect, obtenerTituloServicio, servicioEstaDisponible } from '../services/serviciosVuelos';
-
+import { useAuth } from '../context/useAuth';
+import { enviarConfirmacionPago, enviarEncuesta } from '../services/notificaciones';
+import {
+  MEDIOS_PAGO, actualizarReserva, cambiarEstadoReserva, consultarDisponibilidad, listarReservas
+} from '../services/reservasApi';
+import {
+  cambiarVisibilidadServicio, cargarServiciosDeVuelo, eliminarServicio as eliminarServicioApi,
+  formatearPrecio, formatearServicioParaSelect, guardarServicio as guardarServicioApi
+} from '../services/serviciosVuelos';
+import { cambiarEstadoUsuario, crearUsuario, listarUsuarios } from '../services/usuariosApi';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
-const obtenerReservas = async () => {
-  const querySnapshot = await getDocs(collection(db, "reservas"));
-  return querySnapshot.docs.map((documento) => ({ id: documento.id, ...documento.data() }));
-};
-
 const normalizarTexto = (valor = '') => valor.toString().trim().toLowerCase();
 
-const obtenerEstadoReserva = (reserva) => {
-  const estado = normalizarTexto(reserva.estado || 'pendiente');
-
-  if (['pagado', 'confirmada', 'confirmado', 'aprobada', 'aprobado'].includes(estado)) return 'confirmada';
-  if (['ejecutada', 'ejecutado'].includes(estado)) return 'ejecutada';
-  if (['cancelada', 'cancelado', 'eliminada', 'eliminado'].includes(estado)) return 'cancelada';
-
-  return 'pendiente';
+// Clase visual del estado (las píldoras existentes: pendiente, confirmada, ejecutada, cancelada)
+const CLASE_ESTADO = {
+  Pendiente: 'pendiente',
+  Confirmada: 'confirmada',
+  Asignada: 'confirmada',
+  Ejecutada: 'ejecutada',
+  Cancelada: 'cancelada',
+  Expirada: 'cancelada'
 };
 
-const obtenerEtiquetaEstado = (reserva) => {
-  const estado = obtenerEstadoReserva(reserva);
+const SERVICIO_VACIO = { id: '', titulo: '', precio: '', descripcion: '', imagen: '', duracionMinutos: 15 };
 
-  if (estado === 'confirmada') return 'Confirmada';
-  if (estado === 'ejecutada') return 'Ejecutada';
-  if (estado === 'cancelada') return 'Cancelada';
-  return 'Pendiente';
+const USUARIO_VACIO = {
+  rol: 'Piloto',
+  tipoDocumento: 'CC',
+  numeroDocumento: '',
+  nombres: '',
+  apellidos: '',
+  correo: '',
+  telefono: '',
+  contrasena: '',
+  piloto: { numeroLicencia: '', nivelCertificacion: 'Piloto biplaza', fechaVencCertificacion: '', horasVuelo: 0, pesoKg: '' }
 };
 
-const obtenerFechaComoDate = (valor) => {
-  if (!valor) return null;
-  if (typeof valor.toDate === 'function') return valor.toDate();
-  if (typeof valor === 'string') {
-    const fecha = new Date(valor);
-    return Number.isNaN(fecha.getTime()) ? null : fecha;
-  }
-  if (typeof valor.seconds === 'number') return new Date(valor.seconds * 1000);
-  return null;
-};
+const formatearFechaCreacion = (valor) => (valor ? valor.slice(0, 10).split('-').reverse().join('/') : 'Sin registro');
 
-const formatearFechaCreacion = (valor) => {
-  const fecha = obtenerFechaComoDate(valor);
-
-  if (!fecha) return 'Sin registro';
-
-  return fecha.toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-const obtenerValorOrdenFecha = (reserva) => {
-  const fechaCreacion = obtenerFechaComoDate(reserva.fechaCreacion);
-  if (fechaCreacion) return fechaCreacion.getTime();
-
-  const fechaVuelo = obtenerFechaComoDate(reserva.fecha);
-  return fechaVuelo ? fechaVuelo.getTime() : 0;
-};
+const hoyLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 
 export const AdminPanel = () => {
+  const { usuario } = useAuth();
   const [vistaActual, setVistaActual] = useState('dashboard');
+  const [mensaje, setMensaje] = useState(null); // { tipo: 'ok' | 'error', texto }
 
-  // Estados de Reservas
+  // Reservas
   const [reservas, setReservas] = useState([]);
-  const [modalAbierto, setModalAbierto] = useState(false);
   const [reservaEditando, setReservaEditando] = useState(null);
+  const [bloquesEdicion, setBloquesEdicion] = useState([]);
+  const [reservaPago, setReservaPago] = useState(null);
+  const [datosPago, setDatosPago] = useState({ medioPago: 'Nequi', comprobante: '' });
   const [busquedaReservas, setBusquedaReservas] = useState('');
   const [filtroFechaReserva, setFiltroFechaReserva] = useState('');
   const [filtroEstadoReserva, setFiltroEstadoReserva] = useState('');
   const [filtroTipoReserva, setFiltroTipoReserva] = useState('');
   const [ordenFechaReserva, setOrdenFechaReserva] = useState('desc');
 
-  // Estados de Servicios
+  // Servicios
   const [servicios, setServicios] = useState([]);
-  const [modalServicioAbierto, setModalServicioAbierto] = useState(false);
-  const [servicioEditando, setServicioEditando] = useState({ id: '', titulo: '', precio: '', descripcion: '', imagen: '' });
+  const [servicioEditando, setServicioEditando] = useState(null);
 
-  const hoy = new Date().toISOString().split('T')[0];
+  // Usuarios
+  const [usuarios, setUsuarios] = useState([]);
+  const [usuarioNuevo, setUsuarioNuevo] = useState(null);
+
+  const mostrarError = (error) => setMensaje({ tipo: 'error', texto: error.message || String(error) });
+  const mostrarOk = (texto) => setMensaje({ tipo: 'ok', texto });
 
   // --- CARGA DE DATOS ---
-  const cargarReservas = async () => {
-    const data = await obtenerReservas();
-    setReservas(data);
-  };
-
-  const cargarServicios = async () => {
-    const data = await cargarServiciosDeVuelo();
-    setServicios(data);
-  };
+  const cargarReservas = useCallback(() => listarReservas().then(setReservas), []);
+  const cargarServicios = useCallback(() => cargarServiciosDeVuelo().then(setServicios), []);
+  const cargarUsuarios = useCallback(() => listarUsuarios().then(setUsuarios), []);
 
   useEffect(() => {
-    let montado = true;
+    Promise.all([cargarReservas(), cargarServicios(), cargarUsuarios()])
+      .catch((error) => setMensaje({ tipo: 'error', texto: error.message }));
+  }, [cargarReservas, cargarServicios, cargarUsuarios]);
 
-    const cargarDatosIniciales = async () => {
-      try {
-        const [reservasData, serviciosData] = await Promise.all([
-          obtenerReservas(),
-          cargarServiciosDeVuelo()
-        ]);
+  // Cupos del día elegido en el modal de edición
+  useEffect(() => {
+    if (!reservaEditando?.fecha) return undefined;
+    const controlador = new AbortController();
+    consultarDisponibilidad(reservaEditando.fecha, controlador.signal)
+      .then(setBloquesEdicion)
+      .catch(() => {});
+    return () => controlador.abort();
+  }, [reservaEditando?.fecha]);
 
-        if (montado) {
-          setReservas(reservasData);
-          setServicios(serviciosData);
-        }
-      } catch (error) {
-        console.error("Error al cargar datos del panel:", error);
-      }
-    };
-
-    cargarDatosIniciales();
-
-    return () => {
-      montado = false;
-    };
-  }, []);
-
-  // --- CRUD RESERVAS ---
-  const handleEditar = (reserva) => {
-    setReservaEditando(reserva);
-    setModalAbierto(true);
-  };
-
+  // --- ACCIONES SOBRE RESERVAS ---
   const guardarCambios = async (e) => {
     e.preventDefault();
-    const ref = doc(db, "reservas", reservaEditando.id);
-    await updateDoc(ref, {
-      tipoVuelo: reservaEditando.tipoVuelo,
-      fecha: reservaEditando.fecha
-    });
-    setModalAbierto(false);
-    cargarReservas();
+    try {
+      await actualizarReserva(reservaEditando.id, {
+        idServicio: Number(reservaEditando.idServicio),
+        fecha: reservaEditando.fecha,
+        idBloque: Number(reservaEditando.idBloque)
+      });
+      setReservaEditando(null);
+      mostrarOk('Reserva reprogramada.');
+      await cargarReservas();
+    } catch (error) {
+      mostrarError(error);
+    }
   };
 
-  const handleEliminar = async (reserva) => {
-    if (window.confirm('¿Seguro que deseas cancelar esta reserva?')) {
-      const ref = doc(db, "reservas", reserva.id);
-      await updateDoc(ref, { estado: "Cancelada" });
-      cargarReservas();
+  const handleCancelar = async (reserva) => {
+    if (!window.confirm(`¿Seguro que deseas cancelar la reserva ${reserva.codigo}?`)) return;
+    try {
+      await cambiarEstadoReserva(reserva.id, 'Cancelada');
+      mostrarOk(`Reserva ${reserva.codigo} cancelada.`);
+      await cargarReservas();
+    } catch (error) {
+      mostrarError(error);
+    }
+  };
+
+  const confirmarPago = async (e) => {
+    e.preventDefault();
+    try {
+      const { reserva } = await cambiarEstadoReserva(reservaPago.id, 'Confirmada', datosPago);
+      setReservaPago(null);
+      const correo = await enviarConfirmacionPago(reserva).catch(() => ({ enviado: false }));
+      mostrarOk(`Pago confirmado${correo.enviado ? ' y correo enviado' : ' (no se envió el correo: revisa EmailJS)'}.`);
+      await cargarReservas();
+    } catch (error) {
+      mostrarError(error);
     }
   };
 
   const marcarEjecutado = async (reserva) => {
     if (!window.confirm('¿Marcar vuelo como Ejecutado y enviar encuesta al cliente?')) return;
-
     try {
-      const ref = doc(db, "reservas", reserva.id);
-      await updateDoc(ref, { estado: "Ejecutado" });
-
-      const templateParams = {
-        to_name: reserva.nombre,
-        to_email: reserva.email,
-        link_encuesta: `https://fly-adventure.vercel.app//encuesta/${reserva.id}`
-      };
-
-      await emailjs.send(
-        'service_c2u0zrv', 
-        'template_9g1oxkj', // <-- ID del nuevo template en EmailJS
-        templateParams,
-        'aH1VCX_BLmcB3s77H'
-      );
-
-      alert("✅ Vuelo ejecutado y correo de satisfacción enviado.");
-      cargarReservas();
+      const { reserva: actualizada, tokenEncuesta } = await cambiarEstadoReserva(reserva.id, 'Ejecutada');
+      const correo = await enviarEncuesta(actualizada, tokenEncuesta).catch(() => ({ enviado: false }));
+      mostrarOk(`Vuelo ejecutado${correo.enviado ? ' y encuesta enviada' : ` (encuesta: /encuesta/${tokenEncuesta})`}.`);
+      await cargarReservas();
     } catch (error) {
-      console.error("Error al marcar como ejecutado:", error);
-    }
-  };
-
-  const confirmarPago = async (reserva) => {
-    if (!window.confirm('¿Confirmar pago y enviar correo al cliente?')) return;
-
-    try {
-      const ref = doc(db, "reservas", reserva.id);
-      await updateDoc(ref, { estado: "Pagado" }); // Cambia el estado en Firebase
-
-      // Datos que se enviarán a la plantilla del correo
-      const templateParams = {
-        to_name: reserva.nombre,
-        to_email: reserva.email,
-        fecha_vuelo: reserva.fecha,
-        hora_vuelo: reserva.hora,
-        tipo_vuelo: reserva.tipoVuelo
-      };
-
-      await emailjs.send(
-        'service_c2u0zrv',
-        'template_rukyldg',
-        templateParams,
-        'aH1VCX_BLmcB3s77H'
-      );
-
-      alert("✅ Reserva pagada y correo enviado con éxito.");
-      cargarReservas(); // Recarga la tabla para ver el nuevo estado
-    } catch (error) {
-      console.error("Error al confirmar:", error);
-      alert("Hubo un error al enviar el correo.");
+      mostrarError(error);
     }
   };
 
   // --- CRUD SERVICIOS ---
   const guardarServicio = async (e) => {
     e.preventDefault();
-    if (servicioEditando.id) {
-      // Actualizar servicio existente
-      await updateDoc(doc(db, "servicios", servicioEditando.id), servicioEditando);
-    } else {
-      // Crear nuevo servicio
-      const nuevoServicio = { ...servicioEditando };
-      delete nuevoServicio.id; // Eliminamos el ID vacío para que Firebase genere uno real
-      await addDoc(collection(db, "servicios"), nuevoServicio);
+    try {
+      await guardarServicioApi(servicioEditando);
+      setServicioEditando(null);
+      mostrarOk('Servicio guardado.');
+      await cargarServicios();
+    } catch (error) {
+      mostrarError(error);
     }
-    setModalServicioAbierto(false);
-    cargarServicios();
   };
 
-  const eliminarServicio = async (id) => {
-    if (window.confirm('¿Seguro que deseas eliminar este servicio?')) {
-      await deleteDoc(doc(db, "servicios", id));
-      cargarServicios();
+  const eliminarServicio = async (servicio) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar "${servicio.titulo}"?`)) return;
+    try {
+      await eliminarServicioApi(servicio.id);
+      mostrarOk('Servicio eliminado.');
+      await cargarServicios();
+    } catch (error) {
+      mostrarError(error);
     }
   };
 
   const toggleServicioActivo = async (servicio) => {
-    // Si no tiene el campo 'activo', asumimos que era true y lo pasamos a false. Si lo tiene, lo invertimos.
-    const nuevoEstado = servicio.activo === undefined ? false : !servicio.activo;
-    await updateDoc(doc(db, "servicios", servicio.id), { activo: nuevoEstado });
-    cargarServicios();
+    try {
+      await cambiarVisibilidadServicio(servicio.id, !servicio.activo);
+      await cargarServicios();
+    } catch (error) {
+      mostrarError(error);
+    }
   };
 
-  const serviciosDisponibles = servicios.filter(servicioEstaDisponible);
-  const servicioActualNoDisponible = reservaEditando?.tipoVuelo
-    && !serviciosDisponibles.some((servicio) => obtenerTituloServicio(servicio) === reservaEditando.tipoVuelo);
+  // --- USUARIOS (solo el administrador crea administradores y pilotos) ---
+  const guardarUsuario = async (e) => {
+    e.preventDefault();
+    try {
+      const datos = { ...usuarioNuevo };
+      if (datos.rol === 'Piloto') {
+        datos.piloto = {
+          ...datos.piloto,
+          horasVuelo: Number(datos.piloto.horasVuelo) || 0,
+          pesoKg: Number(datos.piloto.pesoKg)
+        };
+      } else {
+        delete datos.piloto;
+      }
+      await crearUsuario(datos);
+      setUsuarioNuevo(null);
+      mostrarOk(`${datos.rol} creado. Comparte la contraseña inicial por un medio seguro.`);
+      await cargarUsuarios();
+    } catch (error) {
+      mostrarError(error);
+    }
+  };
 
-  // --- VARIABLES PARA LAS GRÁFICAS ---
-  const tiposReserva = useMemo(() => {
-    const tipos = reservas
-      .map((reserva) => reserva.tipoVuelo)
-      .filter(Boolean);
+  const toggleUsuarioActivo = async (u) => {
+    try {
+      await cambiarEstadoUsuario(u.idUsuario, !u.activo);
+      await cargarUsuarios();
+    } catch (error) {
+      mostrarError(error);
+    }
+  };
 
-    return [...new Set(tipos)].sort((a, b) => a.localeCompare(b));
-  }, [reservas]);
+  const cambiarCampoUsuario = (campo, valor) => setUsuarioNuevo((actual) => ({ ...actual, [campo]: valor }));
+  const cambiarCampoPiloto = (campo, valor) => setUsuarioNuevo((actual) => ({ ...actual, piloto: { ...actual.piloto, [campo]: valor } }));
 
-  const resumenReservas = useMemo(() => ({
+  // --- DATOS DERIVADOS ---
+  const tiposReserva = useMemo(
+    () => [...new Set(reservas.map((r) => r.servicio).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [reservas]
+  );
+
+  const contar = (estados) => reservas.filter((r) => estados.includes(r.estado)).length;
+  const resumenReservas = {
     total: reservas.length,
-    pendientes: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'pendiente').length,
-    confirmadas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'confirmada').length,
-    ejecutadas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'ejecutada').length,
-    canceladas: reservas.filter((reserva) => obtenerEstadoReserva(reserva) === 'cancelada').length
-  }), [reservas]);
+    pendientes: contar(['Pendiente']),
+    confirmadas: contar(['Confirmada', 'Asignada']),
+    ejecutadas: contar(['Ejecutada']),
+    canceladas: contar(['Cancelada', 'Expirada'])
+  };
 
   const reservasFiltradas = useMemo(() => {
     const busqueda = normalizarTexto(busquedaReservas);
-
     return reservas
-      .filter((reserva) => {
+      .filter((r) => {
         const coincideBusqueda = !busqueda
-          || normalizarTexto(reserva.nombre).includes(busqueda)
-          || normalizarTexto(reserva.documento).includes(busqueda);
-        const coincideFecha = !filtroFechaReserva || reserva.fecha === filtroFechaReserva;
-        const coincideEstado = !filtroEstadoReserva || obtenerEstadoReserva(reserva) === filtroEstadoReserva;
-        const coincideTipo = !filtroTipoReserva || reserva.tipoVuelo === filtroTipoReserva;
-
+          || normalizarTexto(r.cliente.nombreCompleto).includes(busqueda)
+          || normalizarTexto(r.cliente.numeroDocumento).includes(busqueda)
+          || normalizarTexto(r.codigo).includes(busqueda);
+        const coincideFecha = !filtroFechaReserva || r.fecha === filtroFechaReserva;
+        const coincideEstado = !filtroEstadoReserva || CLASE_ESTADO[r.estado] === filtroEstadoReserva;
+        const coincideTipo = !filtroTipoReserva || r.servicio === filtroTipoReserva;
         return coincideBusqueda && coincideFecha && coincideEstado && coincideTipo;
       })
       .sort((a, b) => {
-        const diferencia = obtenerValorOrdenFecha(a) - obtenerValorOrdenFecha(b);
+        const diferencia = a.fechaCreacion.localeCompare(b.fechaCreacion);
         return ordenFechaReserva === 'asc' ? diferencia : -diferencia;
       });
   }, [reservas, busquedaReservas, filtroFechaReserva, filtroEstadoReserva, filtroTipoReserva, ordenFechaReserva]);
 
-  // 1. Datos básicos usando el useMemo 'resumenReservas' que ya tenías
-  const ejecutados = resumenReservas.ejecutadas || 0;
-  const cancelados = resumenReservas.canceladas || 0;
-  const pendientes = resumenReservas.pendientes || 0;
+  const ejecutados = resumenReservas.ejecutadas;
+  const cancelados = resumenReservas.canceladas;
+  const pendientes = resumenReservas.pendientes;
 
-  // 2. Cálculo de Satisfacción de Encuestas
-  // Buscamos las reservas que tengan el campo 'satisfaccion' registrado
-  const encuestasRespondidas = reservas.filter(r => r.satisfaccion !== undefined && r.satisfaccion !== "");
-  const satisfechos = encuestasRespondidas.filter(r => r.satisfaccion === 'satisfecho' || r.satisfaccion === true).length;
+  // Satisfacción: 4 o 5 estrellas = satisfecho
+  const encuestasRespondidas = reservas.filter((r) => r.encuesta);
+  const satisfechos = encuestasRespondidas.filter((r) => r.encuesta.satisfaccion >= 4).length;
   const noSatisfechos = encuestasRespondidas.length - satisfechos;
-  
-  const satisfaccionPorcentaje = encuestasRespondidas.length > 0 
-    ? Math.round((satisfechos / encuestasRespondidas.length) * 100) 
+  const satisfaccionPorcentaje = encuestasRespondidas.length > 0
+    ? Math.round((satisfechos / encuestasRespondidas.length) * 100)
     : 0;
 
-  // 3. Promedio (Tasa de Efectividad)
-  const totalValidas = resumenReservas.total || 0;
-  const porcentajeEjecutadas = totalValidas > 0 
-    ? ((ejecutados / totalValidas) * 100).toFixed(1) 
-    : 0;
+  const totalValidas = resumenReservas.total;
+  const porcentajeEjecutadas = totalValidas > 0 ? ((ejecutados / totalValidas) * 100).toFixed(1) : 0;
 
-  // --- CONFIGURACIÓN DE GRÁFICAS ---
   const datosBarra = {
     labels: ['Ejecutados', 'Cancelados', 'Pendientes'],
-    datasets: [{
-      label: 'Vuelos',
-      data: [ejecutados, cancelados, pendientes],
-      backgroundColor: ['#4FB3FF', '#e74c3c', '#FFB703']
-    }]
+    datasets: [{ label: 'Vuelos', data: [ejecutados, cancelados, pendientes], backgroundColor: ['#4FB3FF', '#e74c3c', '#FFB703'] }]
   };
-
   const datosSatisfaccion = {
     labels: ['Satisfechos', 'No Satisfechos'],
     datasets: [{
-      // Si no hay encuestas, muestra un gráfico gris. Si hay, muestra los datos reales.
       data: encuestasRespondidas.length > 0 ? [satisfechos, noSatisfechos] : [1],
-      backgroundColor: encuestasRespondidas.length > 0 ? ['#2ecc71', '#e74c3c'] : ['#eef2f6'],
+      backgroundColor: encuestasRespondidas.length > 0 ? ['#2ecc71', '#e74c3c'] : ['#eef2f6']
     }]
   };
-
   const datosPromedio = {
     labels: ['Ejecutadas', 'Otras'],
-    datasets: [{
-      data: [ejecutados, totalValidas - ejecutados],
-      backgroundColor: ['#FFB703', '#eef2f6']
-    }]
+    datasets: [{ data: [ejecutados, totalValidas - ejecutados], backgroundColor: ['#FFB703', '#eef2f6'] }]
   };
+
+  const itemMenu = (vista, texto) => (
+    <div className={`menu-item ${vistaActual === vista ? 'active' : ''}`} onClick={() => setVistaActual(vista)} data-cy={`menu-${vista}`}>
+      {texto}
+    </div>
+  );
 
   return (
     <div className="admin-container">
-
       {/* SIDEBAR */}
       <div className="sidebar">
-        <div 
-          className={`menu-item ${vistaActual === 'dashboard' ? 'active' : ''}`} 
-          onClick={() => setVistaActual('dashboard')}
-        >
-          📊 Dashboard
-        </div>
-        <div 
-          className={`menu-item ${vistaActual === 'vuelos' ? 'active' : ''}`} 
-          onClick={() => setVistaActual('vuelos')}
-        >
-          📝 Gestión de Reservas
-        </div>
-        <div 
-          className={`menu-item ${vistaActual === 'servicios' ? 'active' : ''}`} 
-          onClick={() => setVistaActual('servicios')}
-        >
-          🪂 Servicios de Vuelo
-        </div>
+        {itemMenu('dashboard', '📊 Dashboard')}
+        {itemMenu('vuelos', '📝 Gestión de Reservas')}
+        {itemMenu('servicios', '🪂 Servicios de Vuelo')}
+        {itemMenu('usuarios', '👥 Usuarios')}
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="content">
+        {mensaje && (
+          <div className={`panel-mensaje panel-mensaje-${mensaje.tipo}`} data-cy="panel-mensaje">
+            <span>{mensaje.texto}</span>
+            <button type="button" onClick={() => setMensaje(null)} aria-label="Cerrar mensaje">✕</button>
+          </div>
+        )}
 
         {vistaActual === 'dashboard' && (
           <div className="card">
@@ -367,15 +318,9 @@ export const AdminPanel = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '20px', marginTop: '30px', flexWrap: 'wrap', justifyContent: 'space-evenly', alignItems: 'center' }}>
-              <div style={{ width: '300px', height: '300px' }}>
-                <Bar data={datosBarra} options={{ maintainAspectRatio: false }} />
-              </div>
-              <div style={{ width: '300px', height: '300px' }}>
-                <Doughnut data={datosSatisfaccion} options={{ maintainAspectRatio: false }} />
-              </div>
-              <div style={{ width: '300px', height: '300px' }}>
-                <Doughnut data={datosPromedio} options={{ maintainAspectRatio: false }} />
-              </div>
+              <div style={{ width: '300px', height: '300px' }}><Bar data={datosBarra} options={{ maintainAspectRatio: false }} /></div>
+              <div style={{ width: '300px', height: '300px' }}><Doughnut data={datosSatisfaccion} options={{ maintainAspectRatio: false }} /></div>
+              <div style={{ width: '300px', height: '300px' }}><Doughnut data={datosPromedio} options={{ maintainAspectRatio: false }} /></div>
             </div>
           </div>
         )}
@@ -383,133 +328,86 @@ export const AdminPanel = () => {
         {vistaActual === 'vuelos' && (
           <div className="reservas-view">
             <div className="reservas-header">
-              <h2>Gestion de Reservas</h2>
-              <p>Consulta, filtra y actualiza las reservas registradas.</p>
+              <h2>Gestión de Reservas</h2>
+              <p>Consulta, filtra y actualiza las reservas registradas. El pago se confirma después de recibirlo por WhatsApp.</p>
             </div>
 
             <div className="reservation-summary-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-              <div className="reservation-summary-card">
-                <span>Total reservas</span>
-                <strong>{resumenReservas.total}</strong>
-              </div>
-              <div className="reservation-summary-card">
-                <span>Pendientes</span>
-                <strong>{resumenReservas.pendientes}</strong>
-              </div>
-              <div className="reservation-summary-card">
-                <span>Confirmadas</span>
-                <strong>{resumenReservas.confirmadas}</strong>
-              </div>
-              <div className="reservation-summary-card">
-                <span>Ejecutadas</span>
-                <strong>{resumenReservas.ejecutadas}</strong>
-              </div>
-              <div className="reservation-summary-card">
-                <span>Canceladas</span>
-                <strong>{resumenReservas.canceladas}</strong>
-              </div>
+              <div className="reservation-summary-card"><span>Total reservas</span><strong>{resumenReservas.total}</strong></div>
+              <div className="reservation-summary-card"><span>Pendientes</span><strong>{resumenReservas.pendientes}</strong></div>
+              <div className="reservation-summary-card"><span>Confirmadas</span><strong>{resumenReservas.confirmadas}</strong></div>
+              <div className="reservation-summary-card"><span>Ejecutadas</span><strong>{resumenReservas.ejecutadas}</strong></div>
+              <div className="reservation-summary-card"><span>Canceladas</span><strong>{resumenReservas.canceladas}</strong></div>
             </div>
 
             <div className="reservation-filters">
               <div className="reservation-search">
-                <input
-                  type="search"
-                  value={busquedaReservas}
-                  onChange={(e) => setBusquedaReservas(e.target.value)}
-                  placeholder="Buscar nombre o cedula"
-                />
+                <input type="search" value={busquedaReservas} onChange={(e) => setBusquedaReservas(e.target.value)} placeholder="Buscar nombre, cédula o código" data-cy="admin-buscar" />
               </div>
-
-              <input
-                type="date"
-                value={filtroFechaReserva}
-                onChange={(e) => setFiltroFechaReserva(e.target.value)}
-                title="Filtrar por fecha de vuelo"
-              />
-
-              <button
-                type="button"
-                className="sort-date-button"
-                onClick={() => setOrdenFechaReserva(ordenFechaReserva === 'desc' ? 'asc' : 'desc')}
-                title="Ordenar por fecha de creacion"
-              >
+              <input type="date" value={filtroFechaReserva} onChange={(e) => setFiltroFechaReserva(e.target.value)} title="Filtrar por fecha de vuelo" />
+              <button type="button" className="sort-date-button" onClick={() => setOrdenFechaReserva(ordenFechaReserva === 'desc' ? 'asc' : 'desc')} title="Ordenar por fecha de creación">
                 {ordenFechaReserva === 'desc' ? 'Fecha reciente' : 'Fecha antigua'}
               </button>
-
-              <select
-                value={filtroEstadoReserva}
-                onChange={(e) => setFiltroEstadoReserva(e.target.value)}
-                title="Filtrar por estado"
-              >
+              <select value={filtroEstadoReserva} onChange={(e) => setFiltroEstadoReserva(e.target.value)} title="Filtrar por estado">
                 <option value="">Todos los estados</option>
                 <option value="pendiente">Pendientes</option>
-                <option value="confirmada">Confirmadas</option>
+                <option value="confirmada">Confirmadas / asignadas</option>
                 <option value="ejecutada">Ejecutadas</option>
                 <option value="cancelada">Canceladas</option>
               </select>
-
-              <select
-                value={filtroTipoReserva}
-                onChange={(e) => setFiltroTipoReserva(e.target.value)}
-                title="Filtrar por tipo de vuelo"
-              >
+              <select value={filtroTipoReserva} onChange={(e) => setFiltroTipoReserva(e.target.value)} title="Filtrar por tipo de vuelo">
                 <option value="">Todos los tipos</option>
-                {tiposReserva.map((tipo) => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
+                {tiposReserva.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
               </select>
             </div>
 
             <div className="reservations-table-card">
               <div className="reservations-table-wrap">
-                <table className="reservations-table">
+                <table className="reservations-table" data-cy="tabla-reservas">
                   <thead>
                     <tr>
-                      <th>Fecha creacion</th>
+                      <th>Código</th>
+                      <th>Creada</th>
                       <th>Nombre</th>
                       <th>Documento</th>
                       <th>Tipo</th>
-                      <th>Fecha vuelo</th>
+                      <th>Vuelo</th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reservasFiltradas.map(r => (
-                      <tr key={r.id}>
+                    {reservasFiltradas.map((r) => (
+                      <tr key={r.id} data-cy={`fila-${r.codigo}`}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{r.codigo}</td>
                         <td>{formatearFechaCreacion(r.fechaCreacion)}</td>
-                        <td className="reservation-name-cell">{r.nombre || 'Sin nombre'}</td>
-                        <td>{r.documento || 'Sin documento'}</td>
-                        <td>{r.tipoVuelo || 'Sin tipo'}</td>
-                        <td>{r.fecha || 'Sin fecha'}</td>
-                        <td>
-                          <span className={`status-pill status-pill-${obtenerEstadoReserva(r)}`}>
-                            {obtenerEtiquetaEstado(r)}
-                          </span>
+                        <td className="reservation-name-cell">
+                          {r.cliente.nombreCompleto}
+                          {r.cliente.tieneCuenta && <span title="Cliente con cuenta"> 👤</span>}
                         </td>
+                        <td>{r.cliente.numeroDocumento}</td>
+                        <td>{r.servicio}</td>
+                        <td>{r.fecha} {r.hora}</td>
+                        <td><span className={`status-pill status-pill-${CLASE_ESTADO[r.estado]}`}>{r.estado}</span></td>
                         <td className="actions">
-                          {/* Botón Confirmar Pago (solo en pendientes) */}
-                          {obtenerEstadoReserva(r) === 'pendiente' && (
-                            <button onClick={() => confirmarPago(r)} style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }} title="Confirmar Pago">✅</button>
+                          {r.estado === 'Pendiente' && (
+                            <button onClick={() => { setReservaPago(r); setDatosPago({ medioPago: 'Nequi', comprobante: '' }); }} data-cy="btn-confirmar-pago" style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }} title="Confirmar pago">✅</button>
                           )}
-                          {/* NUEVO: Botón Ejecutar Vuelo (solo en confirmadas) */}
-                          {obtenerEstadoReserva(r) === 'confirmada' && (
-                            <button onClick={() => marcarEjecutado(r)} style={{ background: '#3498db', color: 'white', marginRight: '10px' }} title="Marcar como Ejecutado">🛫</button>
+                          {['Confirmada', 'Asignada'].includes(r.estado) && (
+                            <button onClick={() => marcarEjecutado(r)} data-cy="btn-ejecutar" style={{ background: '#3498db', color: 'white', marginRight: '10px' }} title="Marcar como ejecutado">🛫</button>
                           )}
-
-                          <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>✏️</button>
-                          {/* Actualizado para cancelar en lugar de borrar */}
-                          <button onClick={() => handleEliminar(r)} style={{ background: '#e74c3c', color: 'white' }}>🗑️</button>
+                          {['Pendiente', 'Confirmada', 'Asignada'].includes(r.estado) && (
+                            <>
+                              <button onClick={() => setReservaEditando({ id: r.id, codigo: r.codigo, idServicio: r.idServicio, fecha: r.fecha, idBloque: r.idBloque })} data-cy="btn-editar" style={{ marginRight: '10px' }} title="Reprogramar">✏️</button>
+                              <button onClick={() => handleCancelar(r)} data-cy="btn-cancelar" style={{ background: '#e74c3c', color: 'white' }} title="Cancelar">🗑️</button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}
 
                     {reservasFiltradas.length === 0 && (
-                      <tr>
-                        <td colSpan="7" className="empty-reservations">
-                          No hay reservas que coincidan con los filtros.
-                        </td>
-                      </tr>
+                      <tr><td colSpan="8" className="empty-reservations">No hay reservas que coincidan con los filtros.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -518,83 +416,15 @@ export const AdminPanel = () => {
           </div>
         )}
 
-        {vistaActual === '__legacy_vuelos' && (
-          <div className="card">
-            <h2>Gestión de Reservas</h2>
-            <table>
-              <thead>
-                {/* Asegúrate de tener los encabezados correctos */}
-                <tr><th>Documento</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
-              </thead>
-              <tbody>
-                {reservas.map(r => (
-                  <tr key={r.id}> {/* 1. Envolvemos en TR con su key */}
-                    <td>{r.documento}</td>
-                    <td>{r.tipoVuelo}</td>
-                    <td>{r.fecha}</td>
-                    <td>
-                      {/* Etiqueta visual para el estado */}
-                      <span style={{
-                        backgroundColor: r.estado === 'Pagado' ? '#d4edda' : '#fff3cd',
-                        color: r.estado === 'Pagado' ? '#155724' : '#856404',
-                        padding: '4px 8px', borderRadius: '10px', fontWeight: 'bold', fontSize: '0.8rem'
-                      }}>
-                        {r.estado || 'Pendiente'}
-                      </span>
-                    </td>
-                    {/* 2. Etiqueta TD abierta correctamente */}
-                    <td className="actions">
-                      {/* NUEVO BOTÓN PARA APROBAR PAGO */}
-                      {r.estado !== 'Pagado' && (
-                        <button
-                          onClick={() => confirmarPago(r)}
-                          style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }}
-                          title="Confirmar Pago"
-                        >
-                          ✅
-                        </button>
-                      )}
-
-                      <button onClick={() => handleEditar(r)} style={{ marginRight: '10px' }}>✏️</button>
-                      <button onClick={() => handleEliminar(r.id)} style={{ background: '#e74c3c', color: 'white' }}>🗑️</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* NUEVA VISTA: SERVICIOS */}
         {vistaActual === 'servicios' && (
           <div className="card" style={{ padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
               <h2 style={{ margin: 0, color: '#1a4a7c' }}>Gestión de Servicios</h2>
-
-              {/* BOTÓN "COOL" REDISEÑADO */}
-              <button
-                onClick={() => { setServicioEditando({ id: '', titulo: '', precio: '', descripcion: '', imagen: '' }); setModalServicioAbierto(true); }}
-                style={{
-                  background: 'linear-gradient(135deg, #FFB703 0%, #f39c12 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '12px 28px',
-                  borderRadius: '50px',
-                  fontWeight: '700',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 5px 15px rgba(243, 156, 18, 0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  height: 'fit-content'
-                }}
-              >
+              <button onClick={() => setServicioEditando({ ...SERVICIO_VACIO })} className="btn-accion-principal" data-cy="btn-nuevo-servicio">
                 <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo Servicio
               </button>
             </div>
 
-            {/* TABLA CON ALINEACIÓN CORREGIDA (Todo centrado) */}
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#4FB3FF', color: 'white' }}>
@@ -606,50 +436,26 @@ export const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody>
-                {servicios.map(s => (
+                {servicios.map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid #eef2f6' }}>
                     <td style={{ padding: '15px', textAlign: 'center' }}>
-                      <img src={s.imagen} alt="vuelo" style={{ width: '70px', height: '45px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'inline-block' }} />
+                      {s.imagen
+                        ? <img src={s.imagen} alt={s.titulo} style={{ width: '70px', height: '45px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'inline-block' }} />
+                        : 'Sin imagen'}
                     </td>
                     <td style={{ padding: '15px', textAlign: 'center', color: '#1a4a7c', fontWeight: '500' }}>{s.titulo}</td>
-                    <td style={{ padding: '15px', textAlign: 'center', color: '#555' }}>${Number(s.precio).toLocaleString('es-CO')}</td>
-
+                    <td style={{ padding: '15px', textAlign: 'center', color: '#555' }}>{formatearPrecio(s.precio)}</td>
                     <td style={{ padding: '15px', textAlign: 'center' }}>
-                      <span style={{
-                        backgroundColor: s.activo !== false ? '#d4edda' : '#f8d7da',
-                        color: s.activo !== false ? '#155724' : '#721c24',
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        display: 'inline-block'
-                      }}>
-                        {s.activo !== false ? 'Visible' : 'Oculto'}
+                      <span style={{ backgroundColor: s.activo ? '#d4edda' : '#f8d7da', color: s.activo ? '#155724' : '#721c24', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-block' }}>
+                        {s.activo ? 'Visible' : 'Oculto'}
                       </span>
                     </td>
-
                     <td className="actions" style={{ padding: '15px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => toggleServicioActivo(s)}
-                        style={{ marginRight: '8px', background: s.activo !== false ? '#f39c12' : '#2ecc71', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                        title={s.activo !== false ? 'Ocultar servicio' : 'Mostrar servicio'}
-                      >
-                        {s.activo !== false ? '👁️‍🗨️' : '👁️'}
+                      <button onClick={() => toggleServicioActivo(s)} style={{ marginRight: '8px', background: s.activo ? '#f39c12' : '#2ecc71', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }} title={s.activo ? 'Ocultar servicio' : 'Mostrar servicio'}>
+                        {s.activo ? '👁️‍🗨️' : '👁️'}
                       </button>
-
-                      <button
-                        onClick={() => { setServicioEditando(s); setModalServicioAbierto(true); }}
-                        style={{ marginRight: '8px', background: '#4FB3FF', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        ✏️
-                      </button>
-
-                      <button
-                        onClick={() => eliminarServicio(s.id)}
-                        style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => setServicioEditando({ ...s, imagen: s.imagen || '' , descripcion: s.descripcion || '' })} style={{ marginRight: '8px', background: '#4FB3FF', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}>✏️</button>
+                      <button onClick={() => eliminarServicio(s)} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}>🗑️</button>
                     </td>
                   </tr>
                 ))}
@@ -659,62 +465,149 @@ export const AdminPanel = () => {
         )}
 
         {vistaActual === 'usuarios' && (
-          <div className="card">
-            <h2>Gestión de Usuarios (Próximamente)</h2>
-            <p>Aquí irá el CRUD de usuarios con Firebase Auth.</p>
+          <div className="card" style={{ padding: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ margin: 0, color: '#1a4a7c' }}>Usuarios</h2>
+                <p style={{ margin: '6px 0 0 0' }}>Solo un administrador crea administradores y pilotos. Los clientes se registran desde la página.</p>
+              </div>
+              <button onClick={() => setUsuarioNuevo(structuredClone(USUARIO_VACIO))} className="btn-accion-principal" data-cy="btn-nuevo-usuario">
+                <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo usuario
+              </button>
+            </div>
+
+            <div className="reservations-table-wrap">
+              <table className="reservations-table" data-cy="tabla-usuarios">
+                <thead>
+                  <tr><th>Nombre</th><th>Rol</th><th>Correo</th><th>Documento</th><th>Licencia</th><th>Estado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {usuarios.map((u) => (
+                    <tr key={u.idUsuario}>
+                      <td className="reservation-name-cell">{u.nombres} {u.apellidos}</td>
+                      <td>{u.rol}</td>
+                      <td>{u.correo}</td>
+                      <td>{u.tipoDocumento} {u.numeroDocumento}</td>
+                      <td>{u.piloto ? `${u.piloto.numeroLicencia} (vence ${u.piloto.fechaVencCertificacion})` : '—'}</td>
+                      <td><span className={`status-pill status-pill-${u.activo ? 'confirmada' : 'cancelada'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                      <td className="actions">
+                        {u.idUsuario !== usuario?.idUsuario && (
+                          <button onClick={() => toggleUsuarioActivo(u)} style={{ background: u.activo ? '#e74c3c' : '#2ecc71', color: 'white' }}>
+                            {u.activo ? 'Desactivar' : 'Activar'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
 
-      {/* MODAL EDITAR RESERVA */}
-      {modalAbierto && (
+      {/* MODAL CONFIRMAR PAGO */}
+      {reservaPago && (
+        <div className="modal">
+          <div className="modal-content" style={{ width: '400px' }}>
+            <h3>Confirmar pago de {reservaPago.codigo}</h3>
+            <p>{reservaPago.cliente.nombreCompleto} · {reservaPago.servicio} · {formatearPrecio(reservaPago.valorTotal)}</p>
+            <form onSubmit={confirmarPago} data-cy="form-pago">
+              <select value={datosPago.medioPago} onChange={(e) => setDatosPago({ ...datosPago, medioPago: e.target.value })} data-cy="pago-medio" required>
+                {MEDIOS_PAGO.map((medio) => <option key={medio} value={medio}>{medio}</option>)}
+              </select>
+              <input type="text" placeholder="Referencia del comprobante (opcional)" value={datosPago.comprobante} onChange={(e) => setDatosPago({ ...datosPago, comprobante: e.target.value })} maxLength={100} />
+              <button type="submit" style={{ width: '100%' }} data-cy="pago-confirmar">Confirmar pago</button>
+              <button type="button" onClick={() => setReservaPago(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REPROGRAMAR RESERVA */}
+      {reservaEditando && (
         <div className="modal">
           <div className="modal-content">
-            <h3>Editar Reserva</h3>
+            <h3>Reprogramar {reservaEditando.codigo}</h3>
             <form onSubmit={guardarCambios}>
-              <input type="text" value={reservaEditando.documento} disabled />
-              <select
-                value={reservaEditando.tipoVuelo}
-                onChange={e => setReservaEditando({ ...reservaEditando, tipoVuelo: e.target.value })}
-                required
-              >
-                <option value="">Selecciona un plan</option>
-                {servicioActualNoDisponible && (
-                  <option value={reservaEditando.tipoVuelo}>
-                    {reservaEditando.tipoVuelo} (actual, no disponible)
-                  </option>
-                )}
-                {serviciosDisponibles.map((servicio) => (
-                  <option key={servicio.id} value={obtenerTituloServicio(servicio)}>
-                    {formatearServicioParaSelect(servicio)}
+              <select value={reservaEditando.idServicio} onChange={(e) => setReservaEditando({ ...reservaEditando, idServicio: e.target.value })} required>
+                {servicios.filter((s) => s.activo || s.id === Number(reservaEditando.idServicio)).map((servicio) => (
+                  <option key={servicio.id} value={servicio.id}>
+                    {formatearServicioParaSelect(servicio)}{servicio.activo ? '' : ' (oculto)'}
                   </option>
                 ))}
               </select>
-              <input
-                type="date"
-                value={reservaEditando.fecha}
-                onChange={e => setReservaEditando({ ...reservaEditando, fecha: e.target.value })}
-              />
-              <button type="submit" style={{ width: '100%' }}>Guardar Cambios</button>
-              <button type="button" onClick={() => setModalAbierto(false)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <input type="date" value={reservaEditando.fecha} min={hoyLocal()} onChange={(e) => setReservaEditando({ ...reservaEditando, fecha: e.target.value })} required />
+              <select value={reservaEditando.idBloque} onChange={(e) => setReservaEditando({ ...reservaEditando, idBloque: e.target.value })} required>
+                {bloquesEdicion.map((b) => (
+                  <option key={b.idBloque} value={b.idBloque}>{b.horaInicio} ({b.disponibles} cupos)</option>
+                ))}
+              </select>
+              <button type="submit" style={{ width: '100%' }}>Guardar cambios</button>
+              <button type="button" onClick={() => setReservaEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
             </form>
           </div>
         </div>
       )}
 
       {/* MODAL EDITAR/CREAR SERVICIO */}
-      {modalServicioAbierto && (
+      {servicioEditando && (
         <div className="modal">
           <div className="modal-content" style={{ width: '400px' }}>
-            <h3>{servicioEditando.id ? 'Editar' : 'Nuevo'} Servicio</h3>
+            <h3>{servicioEditando.id ? 'Editar' : 'Nuevo'} servicio</h3>
             <form onSubmit={guardarServicio}>
-              <input type="text" placeholder="Título (Ej: Vuelo Extremo)" value={servicioEditando.titulo} onChange={e => setServicioEditando({ ...servicioEditando, titulo: e.target.value })} required />
-              <input type="number" placeholder="Precio (Ej: 250000)" value={servicioEditando.precio} onChange={e => setServicioEditando({ ...servicioEditando, precio: e.target.value })} required />
-              <textarea placeholder="Descripción breve" value={servicioEditando.descripcion} onChange={e => setServicioEditando({ ...servicioEditando, descripcion: e.target.value })} required style={{ width: '100%', marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-              <input type="url" placeholder="URL de la imagen (Ej: https://...)" value={servicioEditando.imagen} onChange={e => setServicioEditando({ ...servicioEditando, imagen: e.target.value })} required />
-
+              <input type="text" placeholder="Título (Ej: Vuelo Extremo)" value={servicioEditando.titulo} onChange={(e) => setServicioEditando({ ...servicioEditando, titulo: e.target.value })} required />
+              <input type="number" placeholder="Precio (Ej: 250000)" min="1" value={servicioEditando.precio} onChange={(e) => setServicioEditando({ ...servicioEditando, precio: e.target.value })} required />
+              <input type="number" placeholder="Duración en minutos" min="5" max="240" value={servicioEditando.duracionMinutos} onChange={(e) => setServicioEditando({ ...servicioEditando, duracionMinutos: e.target.value })} required />
+              <textarea placeholder="Descripción breve" value={servicioEditando.descripcion} onChange={(e) => setServicioEditando({ ...servicioEditando, descripcion: e.target.value })} required style={{ width: '100%', marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+              <input type="url" placeholder="URL de la imagen (Ej: https://...)" value={servicioEditando.imagen} onChange={(e) => setServicioEditando({ ...servicioEditando, imagen: e.target.value })} required />
               <button type="submit" style={{ width: '100%' }}>Guardar</button>
-              <button type="button" onClick={() => setModalServicioAbierto(false)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setServicioEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NUEVO USUARIO */}
+      {usuarioNuevo && (
+        <div className="modal">
+          <div className="modal-content" style={{ width: '460px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3>Nuevo usuario</h3>
+            <form onSubmit={guardarUsuario} data-cy="form-usuario">
+              <select value={usuarioNuevo.rol} onChange={(e) => cambiarCampoUsuario('rol', e.target.value)} data-cy="usuario-rol" required>
+                <option value="Piloto">Piloto</option>
+                <option value="Administrador">Administrador</option>
+              </select>
+              <select value={usuarioNuevo.tipoDocumento} onChange={(e) => cambiarCampoUsuario('tipoDocumento', e.target.value)} required>
+                <option value="CC">Cédula de ciudadanía</option>
+                <option value="CE">Cédula de extranjería</option>
+                <option value="PA">Pasaporte</option>
+                <option value="PPT">Permiso por protección temporal</option>
+              </select>
+              <input placeholder="Número de documento" value={usuarioNuevo.numeroDocumento} onChange={(e) => cambiarCampoUsuario('numeroDocumento', e.target.value)} data-cy="usuario-documento" required />
+              <input placeholder="Nombres" value={usuarioNuevo.nombres} onChange={(e) => cambiarCampoUsuario('nombres', e.target.value)} data-cy="usuario-nombres" required />
+              <input placeholder="Apellidos" value={usuarioNuevo.apellidos} onChange={(e) => cambiarCampoUsuario('apellidos', e.target.value)} data-cy="usuario-apellidos" required />
+              <input type="email" placeholder="Correo" value={usuarioNuevo.correo} onChange={(e) => cambiarCampoUsuario('correo', e.target.value)} data-cy="usuario-correo" required />
+              <input type="tel" placeholder="Teléfono (opcional)" value={usuarioNuevo.telefono} onChange={(e) => cambiarCampoUsuario('telefono', e.target.value)} />
+              <input type="password" placeholder="Contraseña inicial (mín. 8, letras y números)" value={usuarioNuevo.contrasena} onChange={(e) => cambiarCampoUsuario('contrasena', e.target.value)} data-cy="usuario-contrasena" minLength={8} autoComplete="new-password" required />
+
+              {usuarioNuevo.rol === 'Piloto' && (
+                <>
+                  <input placeholder="Número de licencia" value={usuarioNuevo.piloto.numeroLicencia} onChange={(e) => cambiarCampoPiloto('numeroLicencia', e.target.value)} data-cy="piloto-licencia" required />
+                  <select value={usuarioNuevo.piloto.nivelCertificacion} onChange={(e) => cambiarCampoPiloto('nivelCertificacion', e.target.value)} required>
+                    <option>Piloto biplaza</option>
+                    <option>Instructor</option>
+                    <option>Instructor examinador</option>
+                  </select>
+                  <label style={{ fontSize: '0.85rem' }}>Vencimiento de la certificación</label>
+                  <input type="date" value={usuarioNuevo.piloto.fechaVencCertificacion} onChange={(e) => cambiarCampoPiloto('fechaVencCertificacion', e.target.value)} data-cy="piloto-vencimiento" required />
+                  <input type="number" placeholder="Horas de vuelo" min="0" value={usuarioNuevo.piloto.horasVuelo} onChange={(e) => cambiarCampoPiloto('horasVuelo', e.target.value)} />
+                  <input type="number" placeholder="Peso del piloto (kg)" min="40" max="150" value={usuarioNuevo.piloto.pesoKg} onChange={(e) => cambiarCampoPiloto('pesoKg', e.target.value)} data-cy="piloto-peso" required />
+                </>
+              )}
+
+              <button type="submit" style={{ width: '100%' }} data-cy="usuario-guardar">Crear usuario</button>
+              <button type="button" onClick={() => setUsuarioNuevo(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
             </form>
           </div>
         </div>

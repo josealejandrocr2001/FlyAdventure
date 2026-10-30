@@ -1,172 +1,88 @@
-import React, { useState } from 'react';
-import { auth } from '../config/firebase'; 
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+// Inicio de sesión único para Administrador, Piloto y Cliente.
+import { useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { RUTA_INICIO_POR_ROL } from '../context/authContext';
+import { useAuth } from '../context/useAuth';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
-    const navigate = useNavigate();
+  const { iniciarSesion, estaAutenticado, rol } = useAuth();
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [error, setError] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const navigate = useNavigate();
+  const ubicacion = useLocation();
 
-    // Función para entrar
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // CORRECCIÓN: Te manda a la ruta correcta definida en App.jsx
-            navigate('/admin-panel'); 
-        } catch {
-            setError('Usuario o contraseña incorrectos.');
-        }
-    };
+  if (estaAutenticado) return <Navigate to={RUTA_INICIO_POR_ROL[rol] || '/'} replace />;
 
-    // Función para recuperar contraseña
-    const handleResetPassword = async () => {
-        if (!email) {
-            setError('Por favor, ingresa tu correo en el campo superior primero.');
-            return;
-        }
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage('Se ha enviado un correo para restablecer tu contraseña.');
-            setError('');
-        } catch {
-            setError('Error al enviar el correo. Verifica el email.');
-        }
-    };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setEnviando(true);
+    try {
+      const usuario = await iniciarSesion(correo, contrasena);
+      const destino = ubicacion.state?.desde || RUTA_INICIO_POR_ROL[usuario.rol] || '/';
+      navigate(destino, { replace: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
 
-    return (
-        <main className="login-page">
-            <div className="login-container">
-                <h2>Panel <span>Admin</span></h2>
-                <p>Ingresa tus credenciales para gestionar Fly Adventure</p>
+  return (
+    <main className="login-page">
+      <div className="login-container">
+        <h2>Iniciar <span>sesión</span></h2>
+        <p>Clientes, pilotos y administradores de Fly Adventure</p>
 
-                <form onSubmit={handleLogin}>
-                    <div className="input-group">
-                        <label>Correo Electrónico</label>
-                        <input 
-                            type="email" 
-                            placeholder="admin@flyadventure.com" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required 
-                        />
-                    </div>
+        <form onSubmit={handleLogin} data-cy="form-login">
+          <div className="input-group">
+            <label htmlFor="login-correo">Correo electrónico</label>
+            <input
+              id="login-correo"
+              data-cy="login-correo"
+              type="email"
+              placeholder="tucorreo@ejemplo.com"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              autoComplete="username"
+              required
+            />
+          </div>
 
-                    <div className="input-group">
-                        <label>Contraseña</label>
-                        <input 
-                            type="password" 
-                            placeholder="••••••••" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required 
-                        />
-                    </div>
+          <div className="input-group">
+            <label htmlFor="login-contrasena">Contraseña</label>
+            <input
+              id="login-contrasena"
+              data-cy="login-contrasena"
+              type="password"
+              placeholder="••••••••"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
 
-                    {error && <p className="error-alert" style={{color: 'red'}}>{error}</p>}
-                    {message && <p className="success-alert" style={{color: 'green'}}>{message}</p>}
+          {error && <p className="error-alert" data-cy="login-error" style={{ color: 'red' }}>{error}</p>}
 
-                    <button type="submit" className="btn-reserve" style={{ width: '100%', marginTop: '10px' }}>
-                        Ingresar
-                    </button>
-                </form>
+          <button type="submit" className="btn-reserve" data-cy="login-enviar" disabled={enviando} style={{ width: '100%', marginTop: '10px' }}>
+            {enviando ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
 
-                <button onClick={handleResetPassword} className="btn-forgot" style={{marginTop: '15px', background: 'none', border: 'none', color: '#00A8E8', cursor: 'pointer', textDecoration: 'underline'}}>
-                    ¿Olvidó su contraseña?
-                </button>
-            </div>
-        </main>
-    );
+        <p style={{ marginTop: '20px', fontSize: '0.95rem' }}>
+          ¿No tienes cuenta? <Link to="/registro">Regístrate</Link>
+          <br />
+          No necesitas cuenta para <Link to="/reservar">reservar</Link>.
+        </p>
+        <p style={{ fontSize: '0.85rem', color: '#6b7c93' }}>
+          ¿Olvidaste tu contraseña? Escríbenos por WhatsApp y un administrador te ayuda.
+        </p>
+      </div>
+    </main>
+  );
 };
 
 export default Login;
-/*
-import React, { useState } from 'react';
-import { auth } from '../config/firebase'; // Tu config de firebase
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-
-const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
-    const navigate = useNavigate();
-
-    // Función para entrar
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            navigate('/dashboard'); // Te manda al panel cuando entras
-        } catch (err) {
-            setError('Usuario o contraseña incorrectos.');
-        }
-    };
-
-    // Función para recuperar contraseña
-    const handleResetPassword = async () => {
-        if (!email) {
-            setError('Por favor, ingresa tu correo primero.');
-            return;
-        }
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage('Se ha enviado un correo para restablecer tu contraseña.');
-            setError('');
-        } catch (err) {
-            setError('Error al enviar el correo. Verifica el email.');
-        }
-    };
-
-    return (
-        <main className="login-page">
-            <div className="login-container">
-                <h2>Panel <span>Admin</span></h2>
-                <p>Ingresa tus credenciales para gestionar Fly Adventure</p>
-
-                <form onSubmit={handleLogin}>
-                    <div className="input-group">
-                        <label>Correo Electrónico</label>
-                        <input 
-                            type="email" 
-                            placeholder="admin@flyadventure.com" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required 
-                        />
-                    </div>
-
-                    <div className="input-group">
-                        <label>Contraseña</label>
-                        <input 
-                            type="password" 
-                            placeholder="••••••••" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required 
-                        />
-                    </div>
-
-                    {error && <p className="error-alert">{error}</p>}
-                    {message && <p className="success-alert">{message}</p>}
-
-                    <button type="submit" className="btn-reserve" style={{ width: '100%', marginTop: '10px' }}>
-                        Ingresar
-                    </button>
-                </form>
-
-                <button onClick={handleResetPassword} className="btn-forgot">
-                    ¿Olvidó su contraseña?
-                </button>
-            </div>
-        </main>
-    );
-};
-
-export default Login;*/
