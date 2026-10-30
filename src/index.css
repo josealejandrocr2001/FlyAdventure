@@ -713,3 +713,109 @@ nav button:hover {
 .nav-admin-link:hover {
   color: #e6b000 !important;
 }
+
+/* ===== Etapa de desarrollo: cuentas de cliente y API ===== */
+.checkbox-line {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 20px;
+  font-size: 0.95rem;
+  color: #1a4a7c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkbox-line input {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.form-error {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background-color: #fdecea;
+  color: #a12622;
+  font-weight: 500;
+}
+
+.aviso-sesion {
+  margin: 0 0 30px 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background-color: #eaf6ff;
+  text-align: left;
+}
+
+.codigo-reserva {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #1a4a7c;
+  margin: 5px 0 15px 0;
+}
+
+.cuenta-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 35px;
+}
+
+.cuenta-resumen div {
+  background-color: #f7f9fc;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+
+.cuenta-resumen span {
+  font-size: 0.85rem;
+  color: #6b7c93;
+}
+
+.cuenta-resumen strong {
+  font-size: 1.4rem;
+}
+
+.tabla-cliente {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.tabla-cliente th,
+.tabla-cliente td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid #eef2f6;
+  white-space: nowrap;
+}
+
+.tabla-cliente th {
+  color: #6b7c93;
+  font-weight: 600;
+}
+
+.estado-chip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: #eef2f6;
+}
+
+.estado-pendiente { background-color: #fff3cd; color: #856404; }
+.estado-confirmada, .estado-asignada { background-color: #d4edda; color: #155724; }
+.estado-ejecutada { background-color: #dbeafe; color: #1e3a8a; }
+.estado-cancelada, .estado-expirada { background-color: #f8d7da; color: #721c24; }
+
+.reservations-table-wrap {
+  overflow-x: auto;
+}

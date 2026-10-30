@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // 1. Agregamos hooks
 import { Link } from "react-router-dom";
-import { cargarServiciosDisponibles, obtenerTituloServicio } from '../services/serviciosVuelos';
+import { cargarServiciosDisponibles } from '../services/serviciosVuelos';
 
 // Importamos los estilos (se mantienen intactos)
 import {
@@ -16,7 +16,7 @@ import {
 } from "../styles/FlightStyles";
 
 const Flights = () => {
-  // 3. Estado para guardar los servicios que vienen de Firebase
+  // 3. Estado para guardar los servicios que vienen de la API (MySQL)
   const [servicios, setServicios] = useState([]);
 
   // 4. Efecto para cargar los datos al abrir la página
@@ -86,7 +86,7 @@ const Flights = () => {
                 <BtnReserve
                   as={Link}
                   to="/reservar"
-                  state={{ tipoVuelo: obtenerTituloServicio(servicio) }}
+                  state={{ idServicio: servicio.id }}
                   style={{ marginTop: 'auto', padding: '10px 20px', fontSize: '0.9rem', width: 'fit-content', alignSelf: 'center' }}
                 >
                   Reservar Ahora

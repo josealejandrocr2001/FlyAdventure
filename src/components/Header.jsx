@@ -1,26 +1,20 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { auth } from "../config/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { Link, useNavigate } from 'react-router-dom';
+import { RUTA_INICIO_POR_ROL } from '../context/authContext';
+import { useAuth } from '../context/useAuth';
+
+const ETIQUETA_POR_ROL = {
+  Administrador: 'Panel Admin',
+  Piloto: 'Mi agenda',
+  Cliente: 'Mi cuenta'
+};
 
 const Header = () => {
-  const [user, setUser] = useState(null);
+  const { usuario, rol, cerrarSesion } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate("/"); 
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
+  const handleLogout = () => {
+    cerrarSesion();
+    navigate('/');
   };
 
   return (
@@ -33,11 +27,18 @@ const Header = () => {
         <Link to="/vuelos">Vuelos</Link>
         <Link to="/reservar">Reservas</Link>
         <Link to="/nosotros">Nosotros</Link>
-        
-        {user && (
+
+        {usuario ? (
           <>
-            <Link to="/admin-panel" className="nav-admin-link">Panel Admin</Link>
-            <button onClick={handleLogout}>Cerrar sesión</button>
+            <Link to={RUTA_INICIO_POR_ROL[rol] || '/'} className="nav-admin-link" data-cy="nav-mi-espacio">
+              {ETIQUETA_POR_ROL[rol] || 'Mi espacio'}
+            </Link>
+            <button onClick={handleLogout} data-cy="btn-cerrar-sesion">Cerrar sesión</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" data-cy="nav-login">Iniciar sesión</Link>
+            <Link to="/registro" className="nav-admin-link" data-cy="nav-registro">Registrarse</Link>
           </>
         )}
       </nav>

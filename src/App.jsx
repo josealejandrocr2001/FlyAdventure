@@ -1,92 +1,71 @@
-// src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Encuesta } from './pages/Encuesta'; // Ajusta la ruta según tu carpeta
+// src/App.jsx — rutas de la aplicación
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Firebase (Para la autenticación)
-import { auth } from "./config/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { AuthProvider } from './context/AuthProvider';
+import RutaProtegida from './components/RutaProtegida';
+import Header from './components/Header';
+import Footer from './components/Footer';
 
-// Componentes
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import Home from './pages/Home';
+import Booking from './pages/Booking';
+import Nosotros from './pages/Nosotros';
+import Flights from './pages/Flights';
+import Login from './pages/Login';
+import Registro from './pages/Registro';
+import MiCuenta from './pages/MiCuenta';
+import ConsultarReserva from './pages/ConsultarReserva';
+import PanelPiloto from './pages/PanelPiloto';
+import { Encuesta } from './pages/Encuesta';
+import { AdminPanel } from './pages/AdminPanel';
 
-// Páginas
-import Home from "./pages/Home";
-import Booking from "./pages/Booking";
-import Nosotros from "./pages/Nosotros";
-import Flights from "./pages/Flights";
-import Login from "./pages/Login";
-// ¡Importamos el nuevo Panel de Admin!
-import { AdminPanel } from "./pages/AdminPanel";
-
-// Estilos
-import "./index.css";
-
-// ----------------------------------------------------------------------
-// Componente de Ruta Protegida: El "Vigilante"
-// ----------------------------------------------------------------------
-// Este componente revisa si hay alguien logueado antes de mostrar la página.
-const ProtectedRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Escuchamos si Firebase detecta que alguien inició sesión
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) return <div>Cargando...</div>;
-
-  // Si no hay usuario, lo devolvemos al Login
-  if (!user) return <Navigate to="/admin" />;
-
-  // Si hay usuario, le mostramos el Panel
-  return children;
-};
-// ----------------------------------------------------------------------
+import './index.css';
 
 function App() {
   return (
-    <Router>
-      {/* Header reutilizable */}
-      <Header />
+    <AuthProvider>
+      <Router>
+        <Header />
 
-      {/* Contenido */}
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/reservar" element={<Booking />} />
-          <Route path="/nosotros" element={<Nosotros />} />
-          <Route path="/vuelos" element={<Flights />} />
-          <Route path="/encuesta/:id" element={<Encuesta />} />
-          
-          {/* Ruta del Login (La que tú ya tenías) */}
-          <Route path="/admin" element={<Login />} />
+        <main>
+          <Routes>
+            {/* Públicas: cualquier persona, con o sin cuenta */}
+            <Route path="/" element={<Home />} />
+            <Route path="/vuelos" element={<Flights />} />
+            <Route path="/reservar" element={<Booking />} />
+            <Route path="/nosotros" element={<Nosotros />} />
+            <Route path="/mi-reserva" element={<ConsultarReserva />} />
+            <Route path="/encuesta/:token" element={<Encuesta />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Registro />} />
+            {/* Compatibilidad con el enlace anterior del panel */}
+            <Route path="/admin" element={<Navigate to="/login" replace />} />
 
-          {/* NUEVA RUTA: El Panel real, protegido por el "Vigilante" */}
-          <Route 
-            path="/admin-panel" 
-            element={
-              <ProtectedRoute>
-                <AdminPanel />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </main>
+            {/* Cliente con cuenta */}
+            <Route
+              path="/mi-cuenta"
+              element={<RutaProtegida roles={['Cliente']}><MiCuenta /></RutaProtegida>}
+            />
 
-      {/* Footer reutilizable */}
-      <Footer />
-    </Router>
+            {/* Piloto */}
+            <Route
+              path="/piloto"
+              element={<RutaProtegida roles={['Piloto']}><PanelPiloto /></RutaProtegida>}
+            />
+
+            {/* Administrador */}
+            <Route
+              path="/admin-panel"
+              element={<RutaProtegida roles={['Administrador']}><AdminPanel /></RutaProtegida>}
+            />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+
+        <Footer />
+      </Router>
+    </AuthProvider>
   );
 }
 
 export default App;
-
-
-
