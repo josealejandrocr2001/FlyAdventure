@@ -1,0 +1,372 @@
+/* ==========================================================
+   Fly Adventure — tokens de diseño, encabezado y pie de página
+   ========================================================== */
+
+:root {
+  --azul-noche: #0f2f52;     /* textos fuertes y fondos oscuros */
+  --azul-marca: #1a4a7c;     /* color de la marca */
+  --cielo: #4fb3ff;          /* acentos secundarios y enlaces */
+  --vela: #ffc300;           /* acción principal (la vela amarilla) */
+  --vela-oscura: #e0a800;
+  --nube: #f3f8fd;           /* fondo general */
+  --bruma: #dce8f3;          /* bordes y separadores */
+  --texto-suave: #5b6f86;
+  --alto-header: 72px;
+  --radio: 14px;
+}
+
+body {
+  background-color: var(--nube);
+  color: var(--azul-noche);
+}
+
+:focus-visible {
+  outline: 3px solid var(--cielo);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------- Encabezado ---------------- */
+.site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 1000;
+  height: var(--alto-header);
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 clamp(16px, 4vw, 48px);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--bruma);
+  box-sizing: border-box;
+}
+
+.site-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--azul-marca);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.site-logo span {
+  color: var(--vela-oscura);
+  font-weight: 500;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.site-nav a {
+  position: relative;
+  color: var(--azul-marca);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 6px 0;
+}
+
+.site-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--vela);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.site-nav a:hover::after,
+.site-nav a.active::after {
+  transform: scaleX(1);
+}
+
+.site-nav a.active {
+  color: var(--azul-noche);
+  font-weight: 700;
+}
+
+.site-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Botón de icono con tooltip */
+.icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--azul-marca);
+  font-size: 1.35rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: var(--nube);
+  color: var(--azul-noche);
+}
+
+.icon-btn.peligro:hover {
+  color: #c0392b;
+  background: #fdecea;
+}
+
+.icon-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--azul-noche);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.icon-btn[data-tip]:hover::after,
+.icon-btn[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.saludo-usuario {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.btn-vela {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--vela);
+  color: var(--azul-noche);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-vela:hover {
+  background: var(--vela-oscura);
+  transform: translateY(-1px);
+}
+
+.site-actions .btn-vela {
+  margin-left: 10px;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+/* Menú móvil */
+@media (max-width: 900px) {
+  .site-header {
+    gap: 12px;
+  }
+
+  .menu-toggle {
+    display: inline-grid;
+    order: 3;
+  }
+
+  .site-actions {
+    order: 2;
+  }
+
+  .site-actions .btn-vela {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .site-actions .accion-escritorio,
+  .saludo-usuario {
+    display: none;
+  }
+
+  .site-nav {
+    position: fixed;
+    top: var(--alto-header);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px 16px 20px;
+    background: #fff;
+    border-bottom: 1px solid var(--bruma);
+    box-shadow: 0 16px 30px rgba(15, 47, 82, 0.12);
+    transform: translateY(-8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  }
+
+  .site-nav.abierto {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .site-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--nube);
+    font-size: 1.05rem;
+  }
+
+  .site-nav a::after {
+    display: none;
+  }
+
+  .site-nav .solo-movil {
+    display: flex;
+  }
+}
+
+@media (min-width: 901px) {
+  .site-nav .solo-movil {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .site-logo {
+    font-size: 1.3rem;
+  }
+}
+
+/* ---------------- Pie de página ---------------- */
+.site-footer {
+  background: var(--azul-noche);
+  color: #c9d8e8;
+  border-top: 4px solid var(--vela);
+  padding: 56px clamp(16px, 5vw, 64px) 24px;
+}
+
+.footer-grid {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 40px;
+}
+
+.site-footer .site-logo {
+  color: #fff;
+  font-size: 1.5rem;
+}
+
+.site-footer .site-logo span {
+  color: var(--vela);
+}
+
+.site-footer p,
+.site-footer li,
+.site-footer a {
+  color: #c9d8e8 !important;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.site-footer h4 {
+  color: #fff;
+  font-size: 1rem;
+  margin: 0 0 12px 0;
+}
+
+.site-footer ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-footer a {
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--vela) !important;
+}
+
+.site-footer .bi {
+  margin-right: 8px;
+  color: var(--vela);
+}
+
+.footer-legal {
+  max-width: 1120px;
+  margin: 40px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem !important;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+/* ---------------- Inicio de sesión ---------------- */
+.login-page {
+  background:
+    linear-gradient(rgba(15, 47, 82, 0.75), rgba(15, 47, 82, 0.75)),
+    url('/img/vuelo-2.jpg') center / cover no-repeat;
+  padding: calc(var(--alto-header) + 32px) 16px 48px;
+}
+
+.login-icono {
+  font-size: 3rem;
+  color: var(--azul-marca);
+}
+
+.login-container h2 {
+  font-size: 1.9rem;
+}

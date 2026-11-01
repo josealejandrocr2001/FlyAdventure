@@ -36,3 +36,9 @@ export const guardarServicio = (servicio) => {
 export const cambiarVisibilidadServicio = (id, activo) => api.patch(`/servicios/${id}/activo`, { activo });
 
 export const eliminarServicio = (id) => api.delete(`/servicios/${id}`);
+
+// Fotos de respaldo cuando un servicio no tiene imagen cargada
+const IMAGENES_RESPALDO = ['/img/vuelo-1.jpg', '/img/vuelo-2.jpg', '/img/vuelo-3.jpg'];
+
+export const imagenDelServicio = (servicio, indice = 0) =>
+  servicio.imagen || IMAGENES_RESPALDO[indice % IMAGENES_RESPALDO.length];

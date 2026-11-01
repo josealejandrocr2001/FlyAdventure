@@ -8,8 +8,10 @@ export const NosotrosPage = styled.main`
 
 export const HeroContainer = styled.section`
   height: 60vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-    url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center/cover no-repeat;
+  background: linear-gradient(rgba(15, 47, 82, 0.55), rgba(15, 47, 82, 0.55)),
+    url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center/cover no-repeat,
+    url('/img/vuelo-3.jpg') center/cover no-repeat,
+    #0f2f52;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -46,7 +46,7 @@ El script **borra y vuelve a crear** la base `flyadventure` con datos de prueba.
 ```bash
 cd server
 npm install
-copy .env.example .env      # en macOS/Linux: cp .env.example .env
+cp .env.example .env        # en Git Bash (en CMD de Windows: copy)
 ```
 
 Abre `server/.env` y pon tu contraseña de MySQL en `DB_PASSWORD` y una cadena larga en `JWT_SECRET`:
@@ -67,7 +67,7 @@ En **otra** terminal, desde la raíz del repositorio:
 
 ```bash
 npm install
-copy .env.example .env.local   # pide a Jose los valores de EmailJS
+cp .env.example .env.local     # pide a Jose los valores de EmailJS
 npm run dev
 ```
 
@@ -126,4 +126,10 @@ La referencia de endpoints está en [`docs/API.md`](docs/API.md).
 
 ## 8. Despliegue
 
-Vercel publica el frontend desde `main`. **La API y MySQL corren en el equipo local**, así que la versión publicada en Vercel no tiene datos hasta que la API y la base se publiquen en un servidor con acceso desde internet; mientras tanto, la demostración se hace en local.
+| Pieza | Dónde |
+|---|---|
+| Página | Vercel (`https://fly-adventure.vercel.app`) |
+| API | Render (Free Web Service, carpeta `server/`) |
+| Base de datos | Aiven for MySQL (plan Free) |
+
+Render y Vercel se actualizan solos al fusionar a `main`. La guía completa, con las variables de entorno de cada servicio, está en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).

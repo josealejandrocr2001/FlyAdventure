@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // 1. Agregamos hooks
 import { Link } from "react-router-dom";
-import { cargarServiciosDisponibles } from '../services/serviciosVuelos';
+import { cargarServiciosDisponibles, formatearPrecio, imagenDelServicio } from '../services/serviciosVuelos';
 
 // Importamos los estilos (se mantienen intactos)
 import {
@@ -44,7 +44,7 @@ const Flights = () => {
       </HeroContainer>
 
       <Section>
-        <h2>Catalogo de servicios</h2>
+        <h2>Catálogo de servicios</h2>
         <p style={{ maxWidth: '700px', margin: '0 auto 40px auto' }}>
           Disfruta de nuestros planes diseñados con los más altos estándares de seguridad
           y guiados por pilotos expertos certificados.
@@ -52,13 +52,13 @@ const Flights = () => {
 
         <CardsGrid>
           {/* 5. Mapeamos los servicios dinámicamente */}
-          {servicios.map(servicio => (
+          {servicios.map((servicio, indice) => (
             <FlightCard
               key={servicio.id}
               style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
             >
               <img
-                src={servicio.imagen}
+                src={imagenDelServicio(servicio, indice)}
                 alt={servicio.titulo}
                 style={{
                   width: '100%',
@@ -75,12 +75,16 @@ const Flights = () => {
                 <h3 style={{ margin: '8px 0 1px 0', fontSize: '1.4rem' }}>{servicio.titulo}</h3>
 
                 <PriceTag style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>
-                  ${Number(servicio.precio).toLocaleString('es-CO')}
+                  {formatearPrecio(servicio.precio)}
                 </PriceTag>
 
                 {/* Descripción más grande (0.95rem) y con mejor interlineado */}
-                <p style={{ margin: '0 0 25px 0', fontSize: '0.95rem', lineHeight: '1.4', flexGrow: 1 }}>
+                <p style={{ margin: '0 0 12px 0', fontSize: '0.95rem', lineHeight: '1.4', flexGrow: 1 }}>
                   {servicio.descripcion}
+                </p>
+
+                <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#5b6f86' }}>
+                  <i className="bi bi-stopwatch" aria-hidden="true"></i> {servicio.duracionMinutos} minutos de vuelo
                 </p>
 
                 <BtnReserve
@@ -107,7 +111,18 @@ const Flights = () => {
               <summary>¿Es seguro volar en parapente?</summary>
               <p>¡Totalmente! En <strong>Fly Adventure</strong> usamos equipos certificados y pilotos expertos.</p>
             </FAQItem>
-            {/* Agrega los demás FAQItem aquí... */}
+            <FAQItem>
+              <summary>¿Hay límites de peso o de edad?</summary>
+              <p>Volamos con pasajeros de hasta 110 kg y desde los 6 años.</p>
+            </FAQItem>
+            <FAQItem>
+              <summary>¿Qué pasa si el clima no permite volar?</summary>
+              <p>Si el viento o la lluvia no dan condiciones seguras, no despegamos: te contactamos por WhatsApp para acordar una nueva fecha.</p>
+            </FAQItem>
+            <FAQItem>
+              <summary>¿Necesito crear una cuenta para reservar?</summary>
+              <p>No. Puedes reservar como invitado y consultar tu reserva con el código. Si creas una cuenta, verás el historial de tus vuelos.</p>
+            </FAQItem>
           </FAQContainer>
         </Section>
       </Section>

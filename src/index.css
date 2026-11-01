@@ -9,74 +9,6 @@ html, body {
   color: #1a4a7c;
 }
 
-/* HEADER - Ahora es blanco con sombras suaves */
-header {
-    background-color: #ffffff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 50px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    position: fixed; 
-    top: 0;         /* Asegura que esté pegado arriba */
-    left: 0;        /* Asegura que empiece desde la izquierda */
-    right: 0; /*Obliga a estirar hasta la derecha*/
-    width: 100%;
-    z-index: 1000;
-    box-sizing: border-box;
-    
-}
-
-header h1 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;          /* Peso 700 para que se vea imponente */
-  font-size: 1.8rem;
-  margin: 0;
-  color: #1a4a7c;
-}
-
-header h1 span {
-  color: #FFB703;
-  font-weight: 500;          /* "Adventure" más delgado para contraste */
-}
-
-/* Contenedor del Menú - ESTO ARREGLA EL AMONTONAMIENTO */
-header nav {
-  display: flex;             /* Obliga a los enlaces a estar en línea */
-  align-items: center;       /* Los centra verticalmente */
-  flex-wrap: nowrap;         /* Evita que se bajen si no hay espacio */
-  margin-left: auto;         /* Empuja el menú hacia la derecha */
-}
-
-/* NAVEGACIÓN - Con Poppins y buen espacio */
-nav a {
-  margin-left: 20px;         /* Reducimos el espacio a 20px para que quepan */
-  margin-right: 0;           /* Aseguramos que no haya margen derecho extra */
-  color: #1a4a7c;
-  text-decoration: none;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 1.05rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;       /* Evita que una palabra se parta en dos líneas */
-}
-/* Efecto opcional: una rayita amarilla cuando pasas el mouse */
-nav a:after {
-  content: '';
-  display: block;
-  width: 0;
-  height: 2px;
-  background: #ffcc00;
-  transition: width .3s;
-}
-
-nav a:hover:after {
-  width: 100%;
-}
-
-nav a:hover {
-  color: #ffcc00;
-}
 /* MAIN - Ajustado para no quedar oculto bajo el header fixed */
 main {
   padding: 0; /* Quitamos padding para que las secciones ocupen todo el ancho */
@@ -84,23 +16,6 @@ main {
   min-height: 80vh;
 }
 
-/* FOOTER ACTUALIZADO - Forzamos el blanco */
-footer {
-  background-color: #1a4a7c;
-  text-align: center;
-  padding: 30px 10px;
-  border-top: 4px solid #ffcc00;
-  margin-top: 0 !important;
-  display: block; /* Asegura que se comporte como bloque sólido */
-}
-
-/* Esta regla es la que hará que el texto se vea blanco sí o sí */
-footer p {
-  color: #ffffff !important; /* El !important rompe el gris anterior */
-  font-size: 1rem;
-  margin: 0;
-  opacity: 1; /* Quitamos la opacidad para que brille el blanco */
-}
 /* Títulos principales */
 h2 {
   font-size: 2.5rem; /* Tamaño grande para "¿Por qué volar...?" */
@@ -176,48 +91,41 @@ p {
   border: 2px solid #ffcc00;
 }
 .hero-container {
-    margin-top: 0; 
-    padding-top: 0;
-    width: 100vw;/* 100% del ancho de la ventana del navegador */
-    position: relative;     /* Para asegurar que se posicione bien */
-    left: 50%;              /* Lo movemos al centro */
-    right: 50%;
-    margin-left: -50vw;     /* Lo "estiramos" hacia la izquierda */
-    margin-right: -50vw;    /* Lo "estiramos" hacia la derecha */
-    margin-bottom: 0;
-    height: 100vh;
-    background: 
-        linear-gradient(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.6)), 
-        url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif')
-        
-        /*('https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjFlZ3N1bnZhcmdwcnltODRvZGVua2h3ajV6MjFtODZuZWF2cml4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/taH8A68qhO9PiXKJgr/giphy.gif')*/
-        
-        center/cover no-repeat;
+    width: 100%;
+    height: auto !important;
+    min-height: 300px;
+    box-sizing: border-box;
+    padding: calc(var(--alto-header, 72px) + 48px) 20px 56px;
+    margin: 0;
+    background:
+        linear-gradient(rgba(15, 47, 82, 0.72), rgba(15, 47, 82, 0.6)),
+        url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center/cover no-repeat,
+        url('/img/vuelo-2.jpg') center/cover no-repeat,
+        #0f2f52;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    text-shadow: 1px 1px 2px rgb(2, 42, 83);
-
 }
 
 .hero-container h2 {
-    font-size: 3.5rem;
-    color: #1a4a7c; 
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: #ffffff;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
 }
 
 .hero-container h2 span {
-  color: #FFB703; /* Para la palabra "libertad" */
+  color: #ffc300;
 }
 
 .hero-container p {
-    font-size: 1.2rem;
-    color: #1a4a7c;
-    font-weight: 500;
-    margin-bottom: 30px;
+    font-size: 1.15rem;
+    color: #dbe9f7;
+    font-weight: 400;
+    margin: 0;
 }
 /* BOTÓN REDONDEADO */
 .weather-widget {
@@ -683,37 +591,6 @@ min-height: 100vh; /* Cambiamos a min-height */
     margin-bottom: 15px;
     font-weight: 500;
 }
-
-/* Botón de Cerrar Sesión en el Header */
-nav button {
-  margin-left: 20px;
-  background: none;
-  border: none;
-  color: #e74c3c;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  padding: 0;
-}
-
-nav button:hover {
-  color: #c0392b; /* Rojo más oscuro al pasar el mouse */
-  transform: scale(1.05);
-}
-
-/* Color especial para el enlace del Panel Admin */
-.nav-admin-link {
-  color: #FFC300 !important;
-  font-weight: 700 !important;
-}
-
-.nav-admin-link:hover {
-  color: #e6b000 !important;
-}
-
 /* ===== Etapa de desarrollo: cuentas de cliente y API ===== */
 .checkbox-line {
   display: flex;
