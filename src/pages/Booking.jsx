@@ -161,7 +161,8 @@ const Booking = () => {
 📌*Documento:* ${formData.numeroDocumento}
 
 Quedo atento a los métodos de pago para confirmar mi cupo.`;
-    return `https://wa.me/${TELEFONO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+    // Se usa api.whatsapp.com directamente: la redirección de wa.me daña los emojis del mensaje.
+    return `https://api.whatsapp.com/send?phone=${TELEFONO_WHATSAPP}&text=${encodeURIComponent(mensaje)}`;
   };
 
   const climaNoApto = pronosticoClima?.recomendacion.nivel === 'malo';
