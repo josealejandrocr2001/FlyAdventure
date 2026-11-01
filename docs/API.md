@@ -54,6 +54,36 @@ Leyenda de acceso: **Público** (sin token) · **Opcional** (con o sin token) ·
 
 Transiciones permitidas: `Pendiente → Confirmada | Cancelada`, `Confirmada → Asignada | Ejecutada | Cancelada`, `Asignada → Ejecutada | Cancelada`. Desde otros módulos use `aplicarCambioEstado(cx, {...})` de `reservas.service.js`.
 
+## Equipos de vuelo
+
+| Método | Ruta | Acceso | Cuerpo / notas |
+|---|---|---|---|
+| GET | `/equipos?estado=Disponible` | Admin | Filtro opcional por estado |
+| GET | `/equipos/:id` | Admin | — |
+| POST / PUT | `/equipos`, `/equipos/:id` | Admin | `identificador, marca, modelo, tipo ('Biplaza' \| 'Monoplaza'), pesoMinimo, pesoMaximo, fechaUltimaRevision, fechaProximaRevision, estado` |
+| PATCH | `/equipos/:id/estado` | Admin | `{ estado: 'Disponible' \| 'En mantenimiento' \| 'Fuera de servicio' }` |
+
+## Pilotos
+
+| Método | Ruta | Acceso | Cuerpo / notas |
+|---|---|---|---|
+| GET | `/pilotos` | Admin | Ficha de vuelo de todos los pilotos |
+| GET / PUT | `/pilotos/:id` | Admin | `numeroLicencia, nivelCertificacion, fechaVencCertificacion, horasVuelo, pesoKg, disponible` |
+| GET | `/pilotos/:id/disponibilidad?desde=` | Admin | Desde hoy si no se envía `desde` |
+| POST | `/pilotos/:id/disponibilidad` | Admin | `{ fecha, idBloques: [1, 2] }`. No duplica bloques ya registrados |
+| DELETE | `/pilotos/:id/disponibilidad/:idDisponibilidad` | Admin | — |
+| GET | `/pilotos/agenda` | Piloto | Vuelos `Asignada` del piloto con sesión |
+| POST | `/pilotos/agenda/:idReserva/resultado` | Piloto | `{ ejecutado, duracionRealMin, vientoDespegueKmh, motivoNoRealizado, observaciones }`. Ejecutado → `Ejecutada` + `tokenEncuesta`; no ejecutado → motivo obligatorio y `Cancelada`. 403 si el vuelo es de otro piloto |
+
+## Asignaciones (motor de recomendación)
+
+| Método | Ruta | Acceso | Cuerpo / notas |
+|---|---|---|---|
+| GET | `/asignaciones/recomendacion/:idReserva` | Admin | Solo reservas `Confirmada`. Devuelve las 3 mejores combinaciones piloto + equipo con `puntaje` (0 a 100) y `explicacion`, todas las combinaciones válidas y `motivo` si no hay ninguna |
+| POST | `/asignaciones` | Admin | `{ idReserva, idPiloto, idEquipo, justificacion }`. Si no es la recomendación principal, la justificación es obligatoria. La reserva pasa a `Asignada` |
+
+Reglas del motor: piloto activo, disponible, con certificación vigente a la fecha del vuelo, con disponibilidad en ese bloque y sin otro vuelo en el mismo bloque; equipo biplaza `Disponible`, con revisión vigente y libre en ese bloque; peso combinado (pasajero + piloto) dentro del rango del equipo. Puntaje: 50 por cercanía al centro del rango de peso, 30 por certificación (Instructor examinador 30, Instructor 22, Piloto biplaza 15) y 20 por horas de vuelo (máximo con 2000 horas).
+
 ## Encuestas
 
 | Método | Ruta | Acceso | Cuerpo |
