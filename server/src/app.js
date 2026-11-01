@@ -3,10 +3,12 @@ import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
 import { manejadorErrores, rutaNoEncontrada } from './middlewares/errores.js';
+import asignacionesRoutes from './routes/asignaciones.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import catalogosRoutes from './routes/catalogos.routes.js';
 import encuestasRoutes from './routes/encuestas.routes.js';
 import equiposRoutes from './routes/equipos.routes.js';
+import pilotosRoutes from './routes/pilotos.routes.js';
 import reservasRoutes from './routes/reservas.routes.js';
 import serviciosRoutes from './routes/servicios.routes.js';
 import usuariosRoutes from './routes/usuarios.routes.js';
@@ -28,7 +30,9 @@ app.use('/api/encuestas', encuestasRoutes);
 
 // ⬇ Joselin y Linay: registren aquí sus módulos, uno por línea, en orden alfabético.
 //   Ejemplo: app.use('/api/pilotos', pilotosRoutes);
+app.use('/api/asignaciones', asignacionesRoutes);
 app.use('/api/equipos', equiposRoutes);
+app.use('/api/pilotos', pilotosRoutes);
 
 app.use(rutaNoEncontrada);
 app.use(manejadorErrores);
