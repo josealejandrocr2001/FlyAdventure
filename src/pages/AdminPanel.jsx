@@ -469,22 +469,30 @@ export const AdminPanel = () => {
     datasets: [{ data: [ejecutados, totalValidas - ejecutados], backgroundColor: ['#FFB703', '#eef2f6'] }]
   };
 
-  const itemMenu = (vista, texto) => (
-    <div className={`menu-item ${vistaActual === vista ? 'active' : ''}`} onClick={() => setVistaActual(vista)} data-cy={`menu-${vista}`}>
-      {texto}
-    </div>
+  const itemMenu = (vista, texto, icono) => (
+    <button
+      type="button"
+      className={`menu-item ${vistaActual === vista ? 'active' : ''}`}
+      onClick={() => setVistaActual(vista)}
+      aria-current={vistaActual === vista ? 'page' : undefined}
+      data-cy={`menu-${vista}`}
+    >
+      <i className={`bi ${icono}`} aria-hidden="true"></i>
+      <span>{texto}</span>
+    </button>
   );
 
   return (
     <div className="admin-container">
       {/* SIDEBAR */}
       <div className="sidebar">
-        {itemMenu('dashboard', '📊 Dashboard')}
-        {itemMenu('vuelos', '📝 Gestión de Reservas')}
-        {itemMenu('servicios', '🪂 Servicios de Vuelo')}
-        {itemMenu('equipos', '🎒 Equipos de Vuelo')}
-        {itemMenu('pilotos', '🧑‍✈️ Pilotos')}
-        {itemMenu('usuarios', '👥 Usuarios')}
+        <p className="sidebar-titulo">Administración</p>
+        {itemMenu('dashboard', 'Indicadores', 'bi-bar-chart-line')}
+        {itemMenu('vuelos', 'Reservas', 'bi-journal-check')}
+        {itemMenu('servicios', 'Servicios de vuelo', 'bi-tag')}
+        {itemMenu('equipos', 'Equipos de vuelo', 'bi-wind')}
+        {itemMenu('pilotos', 'Pilotos', 'bi-person-badge')}
+        {itemMenu('usuarios', 'Usuarios', 'bi-people')}
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -498,31 +506,38 @@ export const AdminPanel = () => {
 
         {vistaActual === 'dashboard' && (
           <div className="card">
-            <h2>Dashboard</h2>
-            <div className="stats-grid">
-              <div className="card"><h4>Ejecutados</h4><p>{ejecutados}</p></div>
-              <div className="card"><h4>Cancelados</h4><p>{cancelados}</p></div>
-              <div className="card"><h4>Pendientes</h4><p>{pendientes}</p></div>
-              <div className="card"><h4>Satisfacción</h4><p>{satisfaccionPorcentaje}%</p></div>
-              <div className="card"><h4>Promedio reservas</h4><p>{porcentajeEjecutadas}%</p></div>
+            <div className="vista-encabezado">
+              <div>
+                <h2>Indicadores</h2>
+                <p>Resumen de las reservas y de la satisfacción de los clientes.</p>
+              </div>
+            </div>
+            <div className="indicadores">
+              <div><span>Vuelos ejecutados</span><strong>{ejecutados}</strong></div>
+              <div><span>Cancelados</span><strong>{cancelados}</strong></div>
+              <div><span>Pendientes de pago</span><strong>{pendientes}</strong></div>
+              <div><span>Satisfacción</span><strong>{satisfaccionPorcentaje}%</strong></div>
+              <div><span>Reservas ejecutadas</span><strong>{porcentajeEjecutadas}%</strong></div>
             </div>
 
-            <div style={{ display: 'flex', gap: '20px', marginTop: '30px', flexWrap: 'wrap', justifyContent: 'space-evenly', alignItems: 'center' }}>
-              <div style={{ width: '300px', height: '300px' }}><Bar data={datosBarra} options={{ maintainAspectRatio: false }} /></div>
-              <div style={{ width: '300px', height: '300px' }}><Doughnut data={datosSatisfaccion} options={{ maintainAspectRatio: false }} /></div>
-              <div style={{ width: '300px', height: '300px' }}><Doughnut data={datosPromedio} options={{ maintainAspectRatio: false }} /></div>
+            <div className="graficas">
+              <figure><figcaption>Estado de los vuelos</figcaption><div className="grafica"><Bar data={datosBarra} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div></figure>
+              <figure><figcaption>Satisfacción de los clientes</figcaption><div className="grafica"><Doughnut data={datosSatisfaccion} options={{ maintainAspectRatio: false }} /></div></figure>
+              <figure><figcaption>Reservas ejecutadas del total</figcaption><div className="grafica"><Doughnut data={datosPromedio} options={{ maintainAspectRatio: false }} /></div></figure>
             </div>
           </div>
         )}
 
         {vistaActual === 'vuelos' && (
           <div className="reservas-view">
-            <div className="reservas-header">
-              <h2>Gestión de Reservas</h2>
-              <p>Consulta, filtra y actualiza las reservas registradas. El pago se confirma después de recibirlo por WhatsApp.</p>
+            <div className="vista-encabezado">
+              <div>
+                <h2>Reservas</h2>
+                <p>Confirma el pago cuando lo recibas por WhatsApp, asigna piloto y equipo, y marca el vuelo al terminar.</p>
+              </div>
             </div>
 
-            <div className="reservation-summary-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+            <div className="reservation-summary-grid">
               <div className="reservation-summary-card"><span>Total reservas</span><strong>{resumenReservas.total}</strong></div>
               <div className="reservation-summary-card"><span>Pendientes</span><strong>{resumenReservas.pendientes}</strong></div>
               <div className="reservation-summary-card"><span>Confirmadas</span><strong>{resumenReservas.confirmadas}</strong></div>
@@ -577,22 +592,22 @@ export const AdminPanel = () => {
                         </td>
                         <td>{r.cliente.numeroDocumento}</td>
                         <td>{r.servicio}</td>
-                        <td>{r.fecha} {r.hora}</td>
+                        <td className="sin-salto">{r.fecha}<br /><span className="texto-suave">{r.hora}</span></td>
                         <td><span className={`status-pill status-pill-${CLASE_ESTADO[r.estado]}`}>{r.estado}</span></td>
                         <td className="actions">
                           {r.estado === 'Pendiente' && (
-                            <button onClick={() => { setReservaPago(r); setDatosPago({ medioPago: 'Nequi', comprobante: '' }); }} data-cy="btn-confirmar-pago" style={{ background: '#2ecc71', color: 'white', marginRight: '10px' }} title="Confirmar pago">✅</button>
+                            <button onClick={() => { setReservaPago(r); setDatosPago({ medioPago: 'Nequi', comprobante: '' }); }} data-cy="btn-confirmar-pago" className="accion-btn accion-ok" data-tip="Confirmar pago" aria-label="Confirmar pago"><i className="bi bi-cash-coin" aria-hidden="true"></i></button>
                           )}
                           {r.estado === 'Confirmada' && (
-                            <button onClick={() => abrirAsignacion(r)} data-cy="btn-asignar" style={{ background: '#8e44ad', color: 'white', marginRight: '10px' }} title="Asignar piloto y equipo">🧑‍✈️ Asignar</button>
+                            <button onClick={() => abrirAsignacion(r)} data-cy="btn-asignar" className="accion-btn accion-principal" data-tip="Asignar piloto y equipo" aria-label="Asignar piloto y equipo"><i className="bi bi-person-gear" aria-hidden="true"></i></button>
                           )}
                           {['Confirmada', 'Asignada'].includes(r.estado) && (
-                            <button onClick={() => marcarEjecutado(r)} data-cy="btn-ejecutar" style={{ background: '#3498db', color: 'white', marginRight: '10px' }} title="Marcar como ejecutado">🛫</button>
+                            <button onClick={() => marcarEjecutado(r)} data-cy="btn-ejecutar" className="accion-btn" data-tip="Marcar como ejecutado" aria-label="Marcar como ejecutado"><i className="bi bi-flag" aria-hidden="true"></i></button>
                           )}
                           {['Pendiente', 'Confirmada', 'Asignada'].includes(r.estado) && (
                             <>
-                              <button onClick={() => setReservaEditando({ id: r.id, codigo: r.codigo, idServicio: r.idServicio, fecha: r.fecha, idBloque: r.idBloque })} data-cy="btn-editar" style={{ marginRight: '10px' }} title="Reprogramar">✏️</button>
-                              <button onClick={() => handleCancelar(r)} data-cy="btn-cancelar" style={{ background: '#e74c3c', color: 'white' }} title="Cancelar">🗑️</button>
+                              <button onClick={() => setReservaEditando({ id: r.id, codigo: r.codigo, idServicio: r.idServicio, fecha: r.fecha, idBloque: r.idBloque })} data-cy="btn-editar" className="accion-btn" data-tip="Reprogramar" aria-label="Reprogramar"><i className="bi bi-calendar2-event" aria-hidden="true"></i></button>
+                              <button onClick={() => handleCancelar(r)} data-cy="btn-cancelar" className="accion-btn accion-peligro" data-tip="Cancelar reserva" aria-label="Cancelar reserva"><i className="bi bi-x-circle" aria-hidden="true"></i></button>
                             </>
                           )}
                         </td>
@@ -610,62 +625,62 @@ export const AdminPanel = () => {
         )}
 
         {vistaActual === 'servicios' && (
-          <div className="card" style={{ padding: '30px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-              <h2 style={{ margin: 0, color: '#1a4a7c' }}>Gestión de Servicios</h2>
+          <div className="card">
+            <div className="vista-encabezado">
+              <div>
+                <h2>Servicios de vuelo</h2>
+                <p>Los servicios visibles aparecen en el catálogo y en el formulario de reserva.</p>
+              </div>
               <button onClick={() => setServicioEditando({ ...SERVICIO_VACIO })} className="btn-accion-principal" data-cy="btn-nuevo-servicio">
-                <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo Servicio
+                <i className="bi bi-plus-lg" aria-hidden="true"></i> Nuevo servicio
               </button>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#4FB3FF', color: 'white' }}>
-                  <th style={{ padding: '15px', textAlign: 'center', borderRadius: '10px 0 0 0' }}>Imagen</th>
-                  <th style={{ padding: '15px', textAlign: 'center' }}>Título</th>
-                  <th style={{ padding: '15px', textAlign: 'center' }}>Precio</th>
-                  <th style={{ padding: '15px', textAlign: 'center' }}>Estado</th>
-                  <th style={{ padding: '15px', textAlign: 'center', borderRadius: '0 10px 0 0' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {servicios.map((s) => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid #eef2f6' }}>
-                    <td style={{ padding: '15px', textAlign: 'center' }}>
-                      {s.imagen
-                        ? <img src={s.imagen} alt={s.titulo} style={{ width: '70px', height: '45px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'inline-block' }} />
-                        : 'Sin imagen'}
-                    </td>
-                    <td style={{ padding: '15px', textAlign: 'center', color: '#1a4a7c', fontWeight: '500' }}>{s.titulo}</td>
-                    <td style={{ padding: '15px', textAlign: 'center', color: '#555' }}>{formatearPrecio(s.precio)}</td>
-                    <td style={{ padding: '15px', textAlign: 'center' }}>
-                      <span style={{ backgroundColor: s.activo ? '#d4edda' : '#f8d7da', color: s.activo ? '#155724' : '#721c24', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-block' }}>
-                        {s.activo ? 'Visible' : 'Oculto'}
-                      </span>
-                    </td>
-                    <td className="actions" style={{ padding: '15px', textAlign: 'center' }}>
-                      <button onClick={() => toggleServicioActivo(s)} style={{ marginRight: '8px', background: s.activo ? '#f39c12' : '#2ecc71', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }} title={s.activo ? 'Ocultar servicio' : 'Mostrar servicio'}>
-                        {s.activo ? '👁️‍🗨️' : '👁️'}
-                      </button>
-                      <button onClick={() => setServicioEditando({ ...s, imagen: s.imagen || '' , descripcion: s.descripcion || '' })} style={{ marginRight: '8px', background: '#4FB3FF', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}>✏️</button>
-                      <button onClick={() => eliminarServicio(s)} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer' }}>🗑️</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="reservations-table-wrap">
+              <table className="reservations-table" data-cy="tabla-servicios">
+                <thead>
+                  <tr><th>Imagen</th><th>Título</th><th>Precio</th><th>Duración</th><th>Estado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {servicios.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        {s.imagen
+                          ? <img src={s.imagen} alt={s.titulo} className="miniatura" />
+                          : <span className="texto-suave">Sin imagen</span>}
+                      </td>
+                      <td className="reservation-name-cell">{s.titulo}</td>
+                      <td>{formatearPrecio(s.precio)}</td>
+                      <td>{s.duracionMinutos} min</td>
+                      <td><span className={`status-pill status-pill-${s.activo ? 'confirmada' : 'cancelada'}`}>{s.activo ? 'Visible' : 'Oculto'}</span></td>
+                      <td className="actions">
+                        <button onClick={() => toggleServicioActivo(s)} className="accion-btn" data-tip={s.activo ? 'Ocultar del catálogo' : 'Mostrar en el catálogo'} aria-label={s.activo ? 'Ocultar del catálogo' : 'Mostrar en el catálogo'}>
+                          <i className={`bi ${s.activo ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true"></i>
+                        </button>
+                        <button onClick={() => setServicioEditando({ ...s, imagen: s.imagen || '', descripcion: s.descripcion || '' })} className="accion-btn" data-tip="Editar servicio" aria-label="Editar servicio">
+                          <i className="bi bi-pencil" aria-hidden="true"></i>
+                        </button>
+                        <button onClick={() => eliminarServicio(s)} className="accion-btn accion-peligro" data-tip="Eliminar servicio" aria-label="Eliminar servicio">
+                          <i className="bi bi-trash3" aria-hidden="true"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {vistaActual === 'equipos' && (
-          <div className="card" style={{ padding: '30px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '20px', flexWrap: 'wrap' }}>
+          <div className="card">
+            <div className="vista-encabezado">
               <div>
-                <h2 style={{ margin: 0, color: '#1a4a7c' }}>Equipos de Vuelo</h2>
-                <p style={{ margin: '6px 0 0 0' }}>Solo los equipos disponibles y con la revisión al día se pueden asignar a un vuelo.</p>
+                <h2>Equipos de vuelo</h2>
+                <p>Solo los equipos disponibles y con la revisión al día se pueden asignar a un vuelo.</p>
               </div>
               <button onClick={() => setEquipoEditando({ ...EQUIPO_VACIO })} className="btn-accion-principal" data-cy="btn-nuevo-equipo">
-                <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo equipo
+                <i className="bi bi-plus-lg" aria-hidden="true"></i> Nuevo equipo
               </button>
             </div>
 
@@ -696,10 +711,10 @@ export const AdminPanel = () => {
                         </td>
                         <td><span className={`status-pill status-pill-${CLASE_ESTADO_EQUIPO[eq.estado]}`}>{eq.estado}</span></td>
                         <td className="actions">
-                          <select value={eq.estado} onChange={(e) => cambiarEstadoDeEquipo(eq, e.target.value)} data-cy="equipo-cambiar-estado" title="Cambiar estado" style={{ marginRight: '8px', padding: '6px', borderRadius: '6px', maxWidth: '130px' }}>
+                          <select value={eq.estado} onChange={(e) => cambiarEstadoDeEquipo(eq, e.target.value)} data-cy="equipo-cambiar-estado" title="Cambiar estado" className="select-compacto">
                             {ESTADOS_EQUIPO.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
                           </select>
-                          <button onClick={() => setEquipoEditando({ ...eq })} data-cy="btn-editar-equipo" style={{ background: '#4FB3FF', color: 'white' }} title="Editar equipo">✏️</button>
+                          <button onClick={() => setEquipoEditando({ ...eq })} data-cy="btn-editar-equipo" className="accion-btn" data-tip="Editar equipo" aria-label="Editar equipo"><i className="bi bi-pencil" aria-hidden="true"></i></button>
                         </td>
                       </tr>
                     );
@@ -711,10 +726,12 @@ export const AdminPanel = () => {
         )}
 
         {vistaActual === 'pilotos' && (
-          <div className="card" style={{ padding: '30px' }}>
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, color: '#1a4a7c' }}>Pilotos</h2>
-              <p style={{ margin: '6px 0 0 0' }}>Los pilotos se crean en Usuarios. Aquí se edita su ficha y se registra en qué fechas y horas pueden volar.</p>
+          <div className="card">
+            <div className="vista-encabezado">
+              <div>
+                <h2>Pilotos</h2>
+                <p>Los pilotos se crean en Usuarios. Aquí se edita su ficha y se registra en qué fechas y horas pueden volar.</p>
+              </div>
             </div>
 
             <div className="reservations-table-wrap">
@@ -750,8 +767,8 @@ export const AdminPanel = () => {
                           </span>
                         </td>
                         <td className="actions">
-                          <button onClick={() => abrirDisponibilidad(p)} data-cy="btn-disponibilidad" style={{ background: '#2ecc71', color: 'white' }} title="Disponibilidad">📅</button>
-                          <button onClick={() => setPilotoEditando({ ...p })} data-cy="btn-editar-piloto" style={{ background: '#4FB3FF', color: 'white' }} title="Editar ficha">✏️</button>
+                          <button onClick={() => abrirDisponibilidad(p)} data-cy="btn-disponibilidad" className="accion-btn accion-ok" data-tip="Disponibilidad" aria-label="Disponibilidad"><i className="bi bi-calendar-week" aria-hidden="true"></i></button>
+                          <button onClick={() => setPilotoEditando({ ...p })} data-cy="btn-editar-piloto" className="accion-btn" data-tip="Editar ficha" aria-label="Editar ficha"><i className="bi bi-pencil" aria-hidden="true"></i></button>
                         </td>
                       </tr>
                     );
@@ -763,14 +780,14 @@ export const AdminPanel = () => {
         )}
 
         {vistaActual === 'usuarios' && (
-          <div className="card" style={{ padding: '30px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '20px', flexWrap: 'wrap' }}>
+          <div className="card">
+            <div className="vista-encabezado">
               <div>
-                <h2 style={{ margin: 0, color: '#1a4a7c' }}>Usuarios</h2>
-                <p style={{ margin: '6px 0 0 0' }}>Solo un administrador crea administradores y pilotos. Los clientes se registran desde la página.</p>
+                <h2>Usuarios</h2>
+                <p>Solo un administrador crea administradores y pilotos. Los clientes se registran desde la página.</p>
               </div>
               <button onClick={() => setUsuarioNuevo(structuredClone(USUARIO_VACIO))} className="btn-accion-principal" data-cy="btn-nuevo-usuario">
-                <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo usuario
+                <i className="bi bi-plus-lg" aria-hidden="true"></i> Nuevo usuario
               </button>
             </div>
 
@@ -790,7 +807,7 @@ export const AdminPanel = () => {
                       <td><span className={`status-pill status-pill-${u.activo ? 'confirmada' : 'cancelada'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span></td>
                       <td className="actions">
                         {u.idUsuario !== usuario?.idUsuario && (
-                          <button onClick={() => toggleUsuarioActivo(u)} style={{ background: u.activo ? '#e74c3c' : '#2ecc71', color: 'white' }}>
+                          <button onClick={() => toggleUsuarioActivo(u)} className={`accion-btn accion-texto ${u.activo ? 'accion-peligro' : 'accion-ok'}`}>
                             {u.activo ? 'Desactivar' : 'Activar'}
                           </button>
                         )}
@@ -816,7 +833,7 @@ export const AdminPanel = () => {
               </select>
               <input type="text" placeholder="Referencia del comprobante (opcional)" value={datosPago.comprobante} onChange={(e) => setDatosPago({ ...datosPago, comprobante: e.target.value })} maxLength={100} />
               <button type="submit" style={{ width: '100%' }} data-cy="pago-confirmar">Confirmar pago</button>
-              <button type="button" onClick={() => setReservaPago(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setReservaPago(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>
@@ -842,7 +859,7 @@ export const AdminPanel = () => {
                 ))}
               </select>
               <button type="submit" style={{ width: '100%' }}>Guardar cambios</button>
-              <button type="button" onClick={() => setReservaEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setReservaEditando(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>
@@ -860,7 +877,7 @@ export const AdminPanel = () => {
               <textarea placeholder="Descripción breve" value={servicioEditando.descripcion} onChange={(e) => setServicioEditando({ ...servicioEditando, descripcion: e.target.value })} required style={{ width: '100%', marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
               <input type="url" placeholder="URL de la imagen (Ej: https://...)" value={servicioEditando.imagen} onChange={(e) => setServicioEditando({ ...servicioEditando, imagen: e.target.value })} required />
               <button type="submit" style={{ width: '100%' }}>Guardar</button>
-              <button type="button" onClick={() => setServicioEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setServicioEditando(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>
@@ -891,7 +908,7 @@ export const AdminPanel = () => {
                 {ESTADOS_EQUIPO.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
               </select>
               <button type="submit" style={{ width: '100%' }} data-cy="equipo-guardar">Guardar</button>
-              <button type="button" onClick={() => setEquipoEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setEquipoEditando(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>
@@ -918,7 +935,7 @@ export const AdminPanel = () => {
                 Disponible para volar
               </label>
               <button type="submit" style={{ width: '100%' }} data-cy="piloto-guardar">Guardar</button>
-              <button type="button" onClick={() => setPilotoEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setPilotoEditando(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>
@@ -968,7 +985,7 @@ export const AdminPanel = () => {
               </div>
             ))}
 
-            <button type="button" onClick={() => { setPilotoDisponibilidad(null); setErrorModal(''); }} style={{ background: '#ccc', width: '100%', marginTop: '10px' }} data-cy="disp-cerrar">Cerrar</button>
+            <button type="button" onClick={() => { setPilotoDisponibilidad(null); setErrorModal(''); }} className="btn-secundario" data-cy="disp-cerrar">Cerrar</button>
           </div>
         </div>
       )}
@@ -999,7 +1016,7 @@ export const AdminPanel = () => {
                     style={{ border: i === 0 ? '2px solid #f1c40f' : '1px solid #dde3ea', borderRadius: '10px', padding: '12px', marginBottom: '10px', textAlign: 'left' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                       <strong>{i === 0 ? '⭐ Recomendada: ' : `Opción ${i + 1}: `}{c.piloto.nombre} + {c.equipo.nombre}</strong>
-                      <span style={{ background: '#1a4a7c', color: 'white', borderRadius: '12px', padding: '2px 10px', whiteSpace: 'nowrap' }}>{c.puntaje} pts</span>
+                      <span className="puntaje">{c.puntaje} pts</span>
                     </div>
                     <p style={{ fontSize: '0.85rem', margin: '6px 0' }}>{c.explicacion}</p>
                     {i === 0 && (
@@ -1020,13 +1037,13 @@ export const AdminPanel = () => {
                       ))}
                     </select>
                     <textarea placeholder="Justificación (obligatoria si no aceptas la recomendación)" value={eleccionManual.justificacion} onChange={(e) => setEleccionManual({ ...eleccionManual, justificacion: e.target.value })} minLength={10} maxLength={300} required data-cy="asignacion-justificacion" style={{ width: '100%', marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-                    <button type="submit" style={{ width: '100%', background: '#8e44ad', color: 'white' }} data-cy="btn-asignar-manual">Asignar con justificación</button>
+                    <button type="submit" className="btn-primario" data-cy="btn-asignar-manual">Asignar con justificación</button>
                   </form>
                 )}
               </>
             )}
 
-            <button type="button" onClick={() => { setAsignando(null); setErrorModal(''); }} style={{ background: '#ccc', width: '100%', marginTop: '10px' }}>Cancelar</button>
+            <button type="button" onClick={() => { setAsignando(null); setErrorModal(''); }} className="btn-secundario">Cancelar</button>
           </div>
         </div>
       )}
@@ -1070,7 +1087,7 @@ export const AdminPanel = () => {
               )}
 
               <button type="submit" style={{ width: '100%' }} data-cy="usuario-guardar">Crear usuario</button>
-              <button type="button" onClick={() => setUsuarioNuevo(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+              <button type="button" onClick={() => setUsuarioNuevo(null)} className="btn-secundario">Cancelar</button>
             </form>
           </div>
         </div>

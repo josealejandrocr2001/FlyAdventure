@@ -9,16 +9,18 @@ const RESULTADO_VACIO = { ejecutado: true, duracionRealMin: '', vientoDespegueKm
 
 const hoyLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 
+// Estilos alineados con los tokens del sitio (styles/layout.css)
 const estilos = {
-  tarjeta: { border: '1px solid #dde3ea', borderRadius: '12px', padding: '16px', marginBottom: '14px', textAlign: 'left', background: 'white' },
-  cabecera: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
-  chip: { background: '#1a4a7c', color: 'white', borderRadius: '14px', padding: '4px 12px', fontSize: '0.85rem', whiteSpace: 'nowrap' },
-  datos: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', margin: '12px 0', fontSize: '0.92rem' },
-  alerta: { background: '#fff4e5', color: '#8a5300', borderRadius: '8px', padding: '8px 10px', fontSize: '0.9rem', margin: '8px 0' },
-  fondoModal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' },
-  modal: { background: 'white', borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '460px', maxHeight: '90vh', overflowY: 'auto' },
-  campo: { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '10px', boxSizing: 'border-box' },
-  mensajeOk: { background: '#d4edda', color: '#155724', borderRadius: '8px', padding: '10px', marginBottom: '16px' }
+  tarjeta: { border: '1px solid #dce8f3', borderRadius: '14px', padding: '20px', marginBottom: '16px', textAlign: 'left', background: 'white' },
+  cabecera: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', color: '#0f2f52' },
+  chip: { background: '#f3f8fd', color: '#1a4a7c', border: '1px solid #dce8f3', borderRadius: '999px', padding: '4px 12px', fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' },
+  datos: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', margin: '16px 0', fontSize: '0.92rem', color: '#0f2f52' },
+  etiqueta: { color: '#5b6f86', fontSize: '0.82rem' },
+  alerta: { display: 'flex', gap: '8px', alignItems: 'flex-start', background: '#fff3cd', color: '#7a5800', borderRadius: '10px', padding: '10px 12px', fontSize: '0.9rem', margin: '8px 0' },
+  fondoModal: { position: 'fixed', inset: 0, background: 'rgba(15, 47, 82, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '16px' },
+  modal: { background: 'white', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '460px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(15, 47, 82, 0.3)' },
+  campo: { width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #dce8f3', marginBottom: '12px', boxSizing: 'border-box', fontFamily: 'inherit' },
+  mensajeOk: { background: '#dff5e6', color: '#146c2e', borderRadius: '10px', padding: '10px 12px', marginBottom: '16px' }
 };
 
 const PanelPiloto = () => {
@@ -90,8 +92,8 @@ const PanelPiloto = () => {
 
   return (
     <main className="reservas-page">
-      <section className="hero-container" style={{ height: '35vh' }}>
-        <h2>Agenda de <span>{usuario?.nombres}</span></h2>
+      <section className="hero-container">
+        <h2>Agenda de {usuario?.nombres}</h2>
         <p>Tus vuelos asignados</p>
       </section>
 
@@ -113,21 +115,24 @@ const PanelPiloto = () => {
           {vuelos.map((v) => (
             <article key={v.id} style={estilos.tarjeta} data-cy={`vuelo-${v.codigo}`}>
               <div style={estilos.cabecera}>
-                <strong style={{ fontSize: '1.1rem' }}>{v.fecha} · {v.hora} a {v.horaFin}</strong>
+                <strong style={{ fontSize: '1.1rem' }}><i className="bi bi-calendar-event" aria-hidden="true"></i> {v.fecha}, de {v.hora} a {v.horaFin}</strong>
                 <span style={estilos.chip}>{v.codigo}</span>
               </div>
               <div style={estilos.datos}>
-                <div><span style={{ color: '#666' }}>Vuelo</span><br /><strong>{v.servicio}</strong></div>
-                <div><span style={{ color: '#666' }}>Equipo</span><br /><strong>{v.equipo}</strong></div>
-                <div><span style={{ color: '#666' }}>Pasajero</span><br /><strong>{v.pasajero.nombreCompleto}</strong></div>
-                <div><span style={{ color: '#666' }}>Peso / edad</span><br /><strong>{v.pasajero.peso} kg · {v.pasajero.edad} años</strong></div>
-                <div><span style={{ color: '#666' }}>Teléfono</span><br /><strong>{v.pasajero.telefono}</strong></div>
+                <div><span style={estilos.etiqueta}>Vuelo</span><br /><strong>{v.servicio}</strong></div>
+                <div><span style={estilos.etiqueta}>Equipo</span><br /><strong>{v.equipo}</strong></div>
+                <div><span style={estilos.etiqueta}>Pasajero</span><br /><strong>{v.pasajero.nombreCompleto}</strong></div>
+                <div><span style={estilos.etiqueta}>Peso / edad</span><br /><strong>{v.pasajero.peso} kg · {v.pasajero.edad} años</strong></div>
+                <div><span style={estilos.etiqueta}>Teléfono</span><br /><strong>{v.pasajero.telefono}</strong></div>
                 {v.pasajero.contactoEmergencia && (
-                  <div><span style={{ color: '#666' }}>Emergencia</span><br /><strong>{v.pasajero.contactoEmergencia} · {v.pasajero.telefonoEmergencia}</strong></div>
+                  <div><span style={estilos.etiqueta}>Emergencia</span><br /><strong>{v.pasajero.contactoEmergencia} · {v.pasajero.telefonoEmergencia}</strong></div>
                 )}
               </div>
               {v.pasajero.observaciones && (
-                <p style={estilos.alerta} data-cy="vuelo-observaciones">⚠️ Observaciones del pasajero: {v.pasajero.observaciones}</p>
+                <p style={estilos.alerta} data-cy="vuelo-observaciones">
+                  <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                  <span><strong>Observaciones del pasajero:</strong> {v.pasajero.observaciones}</span>
+                </p>
               )}
               <button type="button" className="btn-reserve" style={{ margin: '6px 0 0', width: '100%' }} onClick={() => abrirResultado(v)} data-cy="btn-registrar-resultado">
                 Registrar resultado del vuelo
@@ -177,7 +182,7 @@ const PanelPiloto = () => {
               <button type="submit" className="btn-reserve" style={{ width: '100%', margin: '4px 0 8px' }} disabled={guardando} data-cy="resultado-guardar">
                 {guardando ? 'Guardando...' : 'Guardar resultado'}
               </button>
-              <button type="button" onClick={() => setVueloResultado(null)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: '#ccc', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setVueloResultado(null)} className="btn-secundario">
                 Cancelar
               </button>
             </form>

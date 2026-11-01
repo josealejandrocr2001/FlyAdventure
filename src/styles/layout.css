@@ -370,3 +370,10 @@ body {
 .login-container h2 {
   font-size: 1.9rem;
 }
+
+/* Casillas y botones de opción: nunca a todo el ancho */
+input[type='radio'],
+input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
