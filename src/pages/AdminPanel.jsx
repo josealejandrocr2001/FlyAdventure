@@ -1,10 +1,11 @@
-// Panel del Administrador: indicadores, reservas, servicios y usuarios.
+// Panel del Administrador: indicadores, reservas, servicios, equipos y usuarios.
 // Todos los datos vienen de la API (MySQL); nada se escribe directo a la base de datos.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import './AdminPanel.css';
 import { useAuth } from '../context/useAuth';
+import { ESTADOS_EQUIPO, TIPOS_EQUIPO, cambiarEstadoEquipo, guardarEquipo as guardarEquipoApi, listarEquipos } from '../services/equiposApi';
 import { enviarConfirmacionPago, enviarEncuesta } from '../services/notificaciones';
 import {
   MEDIOS_PAGO, actualizarReserva, cambiarEstadoReserva, consultarDisponibilidad, listarReservas
@@ -43,6 +44,28 @@ const USUARIO_VACIO = {
   piloto: { numeroLicencia: '', nivelCertificacion: 'Piloto biplaza', fechaVencCertificacion: '', horasVuelo: 0, pesoKg: '' }
 };
 
+const EQUIPO_VACIO = {
+  id: '',
+  identificador: '',
+  marca: '',
+  modelo: '',
+  tipo: 'Biplaza',
+  pesoMinimo: '',
+  pesoMaximo: '',
+  fechaUltimaRevision: '',
+  fechaProximaRevision: '',
+  estado: 'Disponible'
+};
+
+// Píldora de color según el estado del equipo
+const CLASE_ESTADO_EQUIPO = {
+  Disponible: 'confirmada',
+  'En mantenimiento': 'pendiente',
+  'Fuera de servicio': 'cancelada'
+};
+
+const DIAS_ALERTA_REVISION = 30;
+
 const formatearFechaCreacion = (valor) => (valor ? valor.slice(0, 10).split('-').reverse().join('/') : 'Sin registro');
 
 const hoyLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -72,6 +95,10 @@ export const AdminPanel = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [usuarioNuevo, setUsuarioNuevo] = useState(null);
 
+  // Equipos de vuelo
+  const [equipos, setEquipos] = useState([]);
+  const [equipoEditando, setEquipoEditando] = useState(null);
+
   const mostrarError = (error) => setMensaje({ tipo: 'error', texto: error.message || String(error) });
   const mostrarOk = (texto) => setMensaje({ tipo: 'ok', texto });
 
@@ -79,11 +106,12 @@ export const AdminPanel = () => {
   const cargarReservas = useCallback(() => listarReservas().then(setReservas), []);
   const cargarServicios = useCallback(() => cargarServiciosDeVuelo().then(setServicios), []);
   const cargarUsuarios = useCallback(() => listarUsuarios().then(setUsuarios), []);
+  const cargarEquipos = useCallback(() => listarEquipos().then(setEquipos), []);
 
   useEffect(() => {
-    Promise.all([cargarReservas(), cargarServicios(), cargarUsuarios()])
+    Promise.all([cargarReservas(), cargarServicios(), cargarUsuarios(), cargarEquipos()])
       .catch((error) => setMensaje({ tipo: 'error', texto: error.message }));
-  }, [cargarReservas, cargarServicios, cargarUsuarios]);
+  }, [cargarReservas, cargarServicios, cargarUsuarios, cargarEquipos]);
 
   // Cupos del día elegido en el modal de edición
   useEffect(() => {
@@ -213,6 +241,44 @@ export const AdminPanel = () => {
     }
   };
 
+  // --- EQUIPOS DE VUELO (RF011, HU012) ---
+  const guardarEquipo = async (e) => {
+    e.preventDefault();
+    if (Number(equipoEditando.pesoMaximo) <= Number(equipoEditando.pesoMinimo)) {
+      mostrarError(new Error('El peso máximo debe ser mayor que el peso mínimo.'));
+      return;
+    }
+    if (equipoEditando.fechaProximaRevision <= equipoEditando.fechaUltimaRevision) {
+      mostrarError(new Error('La próxima revisión debe ser posterior a la última revisión.'));
+      return;
+    }
+    try {
+      const esNuevo = !equipoEditando.id;
+      await guardarEquipoApi(equipoEditando);
+      setEquipoEditando(null);
+      mostrarOk(esNuevo ? 'Equipo registrado.' : 'Equipo actualizado.');
+      await cargarEquipos();
+    } catch (error) {
+      mostrarError(error);
+    }
+  };
+
+  const cambiarEstadoDeEquipo = async (equipo, estado) => {
+    if (estado === equipo.estado) return;
+    try {
+      await cambiarEstadoEquipo(equipo.id, estado);
+      mostrarOk(`${equipo.identificador} ahora está ${estado.toLowerCase()}.`);
+      await cargarEquipos();
+    } catch (error) {
+      mostrarError(error);
+    }
+  };
+
+  const cambiarCampoEquipo = (campo, valor) => setEquipoEditando((actual) => ({ ...actual, [campo]: valor }));
+
+  // Días que faltan para la próxima revisión (negativo si ya venció)
+  const diasParaRevision = (fecha) => Math.round((new Date(`${fecha}T00:00:00`) - new Date(`${hoyLocal()}T00:00:00`)) / 86400000);
+
   const cambiarCampoUsuario = (campo, valor) => setUsuarioNuevo((actual) => ({ ...actual, [campo]: valor }));
   const cambiarCampoPiloto = (campo, valor) => setUsuarioNuevo((actual) => ({ ...actual, piloto: { ...actual.piloto, [campo]: valor } }));
 
@@ -294,6 +360,7 @@ export const AdminPanel = () => {
         {itemMenu('dashboard', '📊 Dashboard')}
         {itemMenu('vuelos', '📝 Gestión de Reservas')}
         {itemMenu('servicios', '🪂 Servicios de Vuelo')}
+        {itemMenu('equipos', '🎒 Equipos de Vuelo')}
         {itemMenu('usuarios', '👥 Usuarios')}
       </div>
 
@@ -464,6 +531,59 @@ export const AdminPanel = () => {
           </div>
         )}
 
+        {vistaActual === 'equipos' && (
+          <div className="card" style={{ padding: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ margin: 0, color: '#1a4a7c' }}>Equipos de Vuelo</h2>
+                <p style={{ margin: '6px 0 0 0' }}>Solo los equipos disponibles y con la revisión al día se pueden asignar a un vuelo.</p>
+              </div>
+              <button onClick={() => setEquipoEditando({ ...EQUIPO_VACIO })} className="btn-accion-principal" data-cy="btn-nuevo-equipo">
+                <span style={{ fontSize: '1.4rem', lineHeight: '1' }}>+</span> Nuevo equipo
+              </button>
+            </div>
+
+            <div className="reservations-table-wrap">
+              <table className="reservations-table" data-cy="tabla-equipos">
+                <thead>
+                  <tr><th>Identificador</th><th>Equipo</th><th>Peso combinado</th><th>Última revisión</th><th>Próxima revisión</th><th>Estado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {equipos.length === 0 && (
+                    <tr><td colSpan={7}>No hay equipos registrados.</td></tr>
+                  )}
+                  {equipos.map((eq) => {
+                    const dias = diasParaRevision(eq.fechaProximaRevision);
+                    return (
+                      <tr key={eq.id} data-cy={`fila-equipo-${eq.identificador}`}>
+                        <td className="reservation-name-cell">{eq.identificador}</td>
+                        <td>
+                          {eq.marca} {eq.modelo}
+                          <div style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>{eq.tipo}</div>
+                        </td>
+                        <td>{eq.pesoMinimo} a {eq.pesoMaximo} kg</td>
+                        <td>{eq.fechaUltimaRevision}</td>
+                        <td>
+                          {eq.fechaProximaRevision}
+                          {dias < 0 && <div style={{ color: '#c0392b', fontSize: '0.8rem', fontWeight: 'bold' }}>Revisión vencida</div>}
+                          {dias >= 0 && dias <= DIAS_ALERTA_REVISION && <div style={{ color: '#d68910', fontSize: '0.8rem', fontWeight: 'bold' }}>Vence en {dias} días</div>}
+                        </td>
+                        <td><span className={`status-pill status-pill-${CLASE_ESTADO_EQUIPO[eq.estado]}`}>{eq.estado}</span></td>
+                        <td className="actions">
+                          <select value={eq.estado} onChange={(e) => cambiarEstadoDeEquipo(eq, e.target.value)} data-cy="equipo-cambiar-estado" title="Cambiar estado" style={{ marginRight: '8px', padding: '6px', borderRadius: '6px', maxWidth: '130px' }}>
+                            {ESTADOS_EQUIPO.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+                          </select>
+                          <button onClick={() => setEquipoEditando({ ...eq })} data-cy="btn-editar-equipo" style={{ background: '#4FB3FF', color: 'white' }} title="Editar equipo">✏️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {vistaActual === 'usuarios' && (
           <div className="card" style={{ padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '20px', flexWrap: 'wrap' }}>
@@ -563,6 +683,37 @@ export const AdminPanel = () => {
               <input type="url" placeholder="URL de la imagen (Ej: https://...)" value={servicioEditando.imagen} onChange={(e) => setServicioEditando({ ...servicioEditando, imagen: e.target.value })} required />
               <button type="submit" style={{ width: '100%' }}>Guardar</button>
               <button type="button" onClick={() => setServicioEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR/EDITAR EQUIPO */}
+      {equipoEditando && (
+        <div className="modal">
+          <div className="modal-content" style={{ width: '440px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3>{equipoEditando.id ? `Editar ${equipoEditando.identificador}` : 'Nuevo equipo'}</h3>
+            <form onSubmit={guardarEquipo} data-cy="form-equipo">
+              <input placeholder="Identificador (Ej: EQ-004)" value={equipoEditando.identificador} onChange={(e) => cambiarCampoEquipo('identificador', e.target.value)} maxLength={20} data-cy="equipo-identificador" required />
+              <input placeholder="Marca (Ej: Ozone)" value={equipoEditando.marca} onChange={(e) => cambiarCampoEquipo('marca', e.target.value)} maxLength={40} data-cy="equipo-marca" required />
+              <input placeholder="Modelo (Ej: Magnum 3)" value={equipoEditando.modelo} onChange={(e) => cambiarCampoEquipo('modelo', e.target.value)} maxLength={40} data-cy="equipo-modelo" required />
+              <select value={equipoEditando.tipo} onChange={(e) => cambiarCampoEquipo('tipo', e.target.value)} data-cy="equipo-tipo" required>
+                {TIPOS_EQUIPO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+              </select>
+              <label style={{ fontSize: '0.85rem' }}>Rango de peso combinado (piloto + pasajero)</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input type="number" placeholder="Mínimo (kg)" min="1" max="999" step="0.01" value={equipoEditando.pesoMinimo} onChange={(e) => cambiarCampoEquipo('pesoMinimo', e.target.value)} data-cy="equipo-peso-minimo" required />
+                <input type="number" placeholder="Máximo (kg)" min="1" max="999" step="0.01" value={equipoEditando.pesoMaximo} onChange={(e) => cambiarCampoEquipo('pesoMaximo', e.target.value)} data-cy="equipo-peso-maximo" required />
+              </div>
+              <label style={{ fontSize: '0.85rem' }}>Última revisión</label>
+              <input type="date" value={equipoEditando.fechaUltimaRevision} max={hoyLocal()} onChange={(e) => cambiarCampoEquipo('fechaUltimaRevision', e.target.value)} data-cy="equipo-ultima-revision" required />
+              <label style={{ fontSize: '0.85rem' }}>Próxima revisión</label>
+              <input type="date" value={equipoEditando.fechaProximaRevision} min={equipoEditando.fechaUltimaRevision || undefined} onChange={(e) => cambiarCampoEquipo('fechaProximaRevision', e.target.value)} data-cy="equipo-proxima-revision" required />
+              <select value={equipoEditando.estado} onChange={(e) => cambiarCampoEquipo('estado', e.target.value)} data-cy="equipo-estado" required>
+                {ESTADOS_EQUIPO.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+              </select>
+              <button type="submit" style={{ width: '100%' }} data-cy="equipo-guardar">Guardar</button>
+              <button type="button" onClick={() => setEquipoEditando(null)} style={{ background: '#ccc', width: '100%' }}>Cancelar</button>
             </form>
           </div>
         </div>
