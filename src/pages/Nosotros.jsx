@@ -1,4 +1,3 @@
-import React from 'react';
 // Importamos los componentes estilizados
 import { 
   NosotrosPage, 
@@ -46,18 +45,22 @@ const Nosotros = () => {
           <h3>¿Por qué elegirnos?</h3>
           <CardsGrid>
             <InfoCard>
+              <i className="bi bi-shield-check" aria-hidden="true" style={{ fontSize: '1.8rem', color: '#1a4a7c' }}></i>
               <h4>Seguridad</h4>
               <p>Equipos certificados y pilotos profesionales.</p>
             </InfoCard>
             <InfoCard>
+              <i className="bi bi-award" aria-hidden="true" style={{ fontSize: '1.8rem', color: '#1a4a7c' }}></i>
               <h4>Experiencia</h4>
               <p>Años de trayectoria en vuelos de alto nivel.</p>
             </InfoCard>
             <InfoCard>
+              <i className="bi bi-cloud-sun" aria-hidden="true" style={{ fontSize: '1.8rem', color: '#1a4a7c' }}></i>
               <h4>Aventura</h4>
               <p>Vive emociones únicas en cada vuelo.</p>
             </InfoCard>
             <InfoCard>
+              <i className="bi bi-chat-heart" aria-hidden="true" style={{ fontSize: '1.8rem', color: '#1a4a7c' }}></i>
               <h4>Atención</h4>
               <p>Servicio personalizado para cada cliente.</p>
             </InfoCard>

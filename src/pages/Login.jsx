@@ -33,8 +33,9 @@ const Login = () => {
   return (
     <main className="login-page">
       <div className="login-container">
-        <h2>Iniciar <span>sesión</span></h2>
-        <p>Clientes, pilotos y administradores de Fly Adventure</p>
+        <i className="bi bi-person-circle login-icono" aria-hidden="true"></i>
+        <h2 style={{ margin: '10px 0 6px' }}>Iniciar sesión</h2>
+        <p style={{ marginTop: 0 }}>Clientes, pilotos y administradores de Fly Adventure</p>
 
         <form onSubmit={handleLogin} data-cy="form-login">
           <div className="input-group">

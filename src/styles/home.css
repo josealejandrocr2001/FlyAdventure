@@ -1,0 +1,425 @@
+/* ---------------- Página de inicio ---------------- */
+.home h1,
+.home h2,
+.home h3 {
+  text-align: left;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.home p {
+  margin: 0;
+}
+
+/* Hero */
+.home-hero {
+  position: relative;
+  min-height: 100svh;
+  padding: calc(var(--alto-header) + 48px) clamp(16px, 6vw, 96px) 160px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(100deg, rgba(15, 47, 82, 0.86) 0%, rgba(15, 47, 82, 0.55) 45%, rgba(15, 47, 82, 0.1) 100%),
+    url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center / cover no-repeat,
+    url('/img/vuelo-1.jpg') center / cover no-repeat,
+    var(--azul-noche);
+}
+
+.home-hero-contenido {
+  max-width: 620px;
+}
+
+.home-hero h1 {
+  color: #fff;
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  line-height: 1.02;
+  font-weight: 700;
+}
+
+.home-hero p {
+  margin-top: 20px;
+  color: #dbe9f7;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.6;
+  max-width: 34ch;
+}
+
+.home-hero-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 36px;
+}
+
+.btn-grande {
+  padding: 15px 30px;
+  font-size: 1.05rem;
+}
+
+.btn-contorno {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 26px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.btn-contorno:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Condiciones de vuelo de hoy: el detalle propio de la página */
+.condiciones {
+  position: absolute;
+  left: clamp(16px, 6vw, 96px);
+  right: clamp(16px, 6vw, 96px);
+  bottom: -52px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 20px 28px;
+  background: #fff;
+  border-radius: var(--radio);
+  border: 1px solid var(--bruma);
+  box-shadow: 0 18px 40px rgba(15, 47, 82, 0.16);
+}
+
+.condiciones-lugar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 28px;
+  border-right: 1px solid var(--bruma);
+}
+
+.condiciones-lugar .bi {
+  font-size: 1.9rem;
+  color: var(--cielo);
+}
+
+.condiciones-lugar strong {
+  display: block;
+  color: var(--azul-noche);
+  font-size: 1rem;
+}
+
+.condiciones-lugar span {
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+}
+
+.condiciones-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+  flex: 1;
+}
+
+.condiciones-datos dt {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+}
+
+.condiciones-datos dd {
+  margin: 2px 0 0;
+  color: var(--azul-noche);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.condiciones-cargando {
+  color: var(--texto-suave);
+  flex: 1;
+}
+
+.condiciones-nivel {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.nivel-bueno { background: #dff5e6; color: #146c2e; }
+.nivel-medio { background: #fff3cd; color: #7a5800; }
+.nivel-malo { background: #fdecea; color: #a12622; }
+
+/* Secciones */
+.home-seccion {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 96px clamp(16px, 4vw, 32px) 0;
+}
+
+.home-razones {
+  padding-top: 140px;
+}
+
+.home h2 {
+  color: var(--azul-noche);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  margin-bottom: 36px;
+}
+
+.razones {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.razon .bi {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #e3f1fd;
+  color: var(--azul-marca);
+  font-size: 1.5rem;
+}
+
+.razon h3 {
+  margin-top: 18px;
+  font-size: 1.2rem;
+  color: var(--azul-noche);
+}
+
+.razon p {
+  margin-top: 8px;
+  color: var(--texto-suave);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Planes */
+.seccion-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+
+.seccion-encabezado h2 {
+  margin-bottom: 0;
+}
+
+.enlace-flecha {
+  color: var(--azul-marca);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid var(--vela);
+}
+
+.planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+}
+
+.plan {
+  background: #fff;
+  border-radius: var(--radio);
+  border: 1px solid var(--bruma);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.plan-cuerpo {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.plan h3 {
+  font-size: 1.25rem;
+  color: var(--azul-noche);
+}
+
+.plan p {
+  color: var(--texto-suave);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.plan-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 0 8px;
+}
+
+.plan-precio {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--azul-marca);
+}
+
+.plan-duracion {
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+}
+
+.plan .btn-vela {
+  justify-content: center;
+}
+
+/* Pasos (es una secuencia real, por eso va numerada) */
+.pasos {
+  list-style: none;
+  counter-reset: paso;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.pasos li {
+  counter-increment: paso;
+  position: relative;
+  padding-top: 56px;
+  border-top: 3px solid var(--bruma);
+}
+
+.pasos li::before {
+  content: counter(paso);
+  position: absolute;
+  top: -20px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--vela);
+  color: var(--azul-noche);
+  font-weight: 700;
+}
+
+.pasos h3 {
+  font-size: 1.1rem;
+  color: var(--azul-noche);
+  margin-top: -18px;
+}
+
+.pasos p {
+  margin-top: 8px;
+  color: var(--texto-suave);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+/* Cierre */
+.home-cierre {
+  max-width: 1120px;
+  margin: 96px auto;
+  padding: 44px clamp(20px, 4vw, 48px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  background: var(--azul-marca);
+  border-radius: var(--radio);
+}
+
+.home-cierre h2 {
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.home-cierre p {
+  color: #d3e4f5;
+  max-width: 52ch;
+  line-height: 1.6;
+}
+
+.home-cierre-acciones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-contorno-claro {
+  padding: 10px 22px;
+}
+
+@media (max-width: 900px) {
+  .condiciones {
+    position: static;
+    margin-top: 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .home-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding-bottom: 48px;
+  }
+
+  .condiciones-lugar {
+    border-right: none;
+    padding-right: 0;
+    width: 100%;
+  }
+
+  .razones {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .pasos {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 44px;
+  }
+
+  .home-seccion,
+  .home-razones {
+    padding-top: 72px;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-hero {
+    background:
+      linear-gradient(180deg, rgba(15, 47, 82, 0.88) 0%, rgba(15, 47, 82, 0.7) 60%, rgba(15, 47, 82, 0.55) 100%),
+      url('https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzZiN2d6ZGxnaDlqZ3dsdDF6dmRyeWJqZ2E1ZWU4d2RjaHIzZGM2ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0wbCRW6nyy9buU/giphy.gif') center / cover no-repeat,
+      url('/img/vuelo-1.jpg') center / cover no-repeat,
+      var(--azul-noche);
+  }
+
+  .condiciones-datos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pasos {
+    grid-template-columns: 1fr;
+  }
+
+  .home-cierre {
+    margin: 72px 16px;
+  }
+}

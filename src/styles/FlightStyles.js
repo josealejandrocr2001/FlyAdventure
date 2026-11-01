@@ -7,21 +7,26 @@ export const FlightsPage = styled.main`
 `;
 
 export const HeroContainer = styled.section`
-  padding: 80px 20px 40px;
+  padding: calc(var(--alto-header, 72px) + 48px) 20px 56px;
   text-align: center;
-  background: white; /* Diferenciamos el hero del fondo */
-  
+  background:
+    linear-gradient(rgba(15, 47, 82, 0.72), rgba(15, 47, 82, 0.6)),
+    url('/img/vuelo-3.jpg') center/cover no-repeat,
+    #0f2f52;
+
   h2 {
-    font-size: 2.5rem;
-    color: #1E6091;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.02em;
     span {
       color: #FFC300;
     }
   }
 
   p {
-    margin-top: 10px;
-    color: #1E6091;
+    margin: 10px 0 0;
+    color: #dbe9f7;
   }
 `;
 
@@ -77,15 +82,15 @@ export const FlightCard = styled.div`
 `;
 
 export const PriceTag = styled.p`
-  color: #FFB703 !important; /* Usamos el amarillo de tu paleta */
+  color: #1a4a7c !important;
   font-size: 1.5rem !important;
   font-weight: 700;
   margin: 15px 0 !important;
 `;
 
 export const BtnReserve = styled.button`
-  background: #4FB3FF;
-  color: white;
+  background: #FFC300;
+  color: #0f2f52;
   padding: 10px 25px;
   border-radius: 25px;
   text-decoration: none;
@@ -95,8 +100,8 @@ export const BtnReserve = styled.button`
   transition: 0.3s;
 
   &:hover {
-    background: #FFC300;
-    color: #1E6091;
+    background: #E0A800;
+    color: #0f2f52;
   }
 `;
 
