@@ -73,7 +73,17 @@ const DIAS_ALERTA_REVISION = 30;
 
 const ESTILO_ERROR_MODAL = { background: '#fdecea', color: '#a12622', padding: '10px', borderRadius: '8px', fontSize: '0.9rem' };
 
+// fechaCreacion llega de la API como 'AAAA-MM-DD HH:MM:SS' en hora de Colombia
 const formatearFechaCreacion = (valor) => (valor ? valor.slice(0, 10).split('-').reverse().join('/') : 'Sin registro');
+
+const formatearHoraCreacion = (valor) => {
+  const partes = /(\d{2}):(\d{2})/.exec(valor?.slice(11) || '');
+  if (!partes) return '';
+  const hora = Number(partes[1]);
+  const minutos = partes[2];
+  const sufijo = hora < 12 ? 'a. m.' : 'p. m.';
+  return `${hora % 12 || 12}:${minutos} ${sufijo}`;
+};
 
 const hoyLocal = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 
@@ -585,7 +595,10 @@ export const AdminPanel = () => {
                     {reservasFiltradas.map((r) => (
                       <tr key={r.id} data-cy={`fila-${r.codigo}`}>
                         <td style={{ whiteSpace: 'nowrap' }}>{r.codigo}</td>
-                        <td>{formatearFechaCreacion(r.fechaCreacion)}</td>
+                        <td className="sin-salto">
+                          {formatearFechaCreacion(r.fechaCreacion)}
+                          <br /><span className="texto-suave">{formatearHoraCreacion(r.fechaCreacion)}</span>
+                        </td>
                         <td className="reservation-name-cell">
                           {r.cliente.nombreCompleto}
                           {r.cliente.tieneCuenta && <span title="Cliente con cuenta"> 👤</span>}
